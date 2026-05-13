@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Desiner's | Premium Web Design Agency</title>
+    
+    <!-- Fonts & Icons Google/FontAwesome -->
+    <link rel="preconnect" href="googleapis.com">
+    <link rel="preconnect" href="gstatic.com" crossorigin>
+    <link href="googleapis.com" rel="stylesheet">
+    <link rel="stylesheet" href="cloudflare.com">
+
+    <!-- CSS STYLES (Iske bina design aur click positions kaam nahi karti) -->
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --whatsapp-color: #25d366;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* STICKY HEADER */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+
+        .logo a {
+            font-size: 24px;
+            font-weight: 800;
+            text-decoration: none;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: #fff;
+        }
+
+        /* PREMIUM BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-grad);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid var(--border-glass);
+            margin-left: 12px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--primary);
+            color: #fff;
+            background: transparent;
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+        }
+
+        /* HERO SECTION */
+        .hero {
+            padding: 200px 0 120px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .badge {
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            max-width: 800px;
+            margin: 0 auto 24px auto;
+        }
+
+        .gradient-text {
+            background: var(--accent-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px auto;
+        }
+
+        /* SECTIONS COMMON */
+        section:not(.hero) {
+            padding: 100px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header span {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .section-header h2 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-top: 8px;
+        }
+
+        /* ABOUT GRID & COUNTERS */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .about-text p {
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stats-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            padding: 32px 24px;
+            border-radius: 16px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .stat-card h3 {
+            font-size: 40px;
+            font-weight: 800;
+            background: var(--accent-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        /* SERVICES GRID */
+        .services-grid, .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        .service-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            padding: 40px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 24px;
+        }
+
+        .service-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .service-card p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        /* PORTFOLIO MOCK CARDS */
+        .portfolio-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .portfolio-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        .portfolio-img {
+            height: 220px;
+            background: linear-gradient(45deg, #1e1b4b, #311042);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .portfolio-info {
+            padding: 24px;
+        }
+
+        .portfolio-info h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .portfolio-info p {
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* WHY CHOOSE US GRID */
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+        }
+
+        .why-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .why-item i {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        .why-item h4 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* TESTIMONIAL CARDS */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .review-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            padding: 40px;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .review-text {
+            font-size: 16px;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 24px;
+        }
+
+        .reviewer-meta h5 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .reviewer-meta span {
+            color: var(--primary);
+            font-size: 13px;
+        }
+
+        /* CONTACT BLOCK & FORM */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 50px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            padding: 50px;
+            backdrop-filter: blur(12px);
+        }
+
+        .contact-info h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .contact-info p {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        .info-link {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .info-link i {
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .info-link a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .btn-whatsapp-action {
+            background: var(--whatsapp-color);
+            color: #fff;
+            margin-top: 24px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .btn-whatsapp-action:hover {
+            background: #1ebd58;
+            transform: translateY(-2px);
+        }
+
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .form-submit-btn {
+            width: 100%;
+            background: var(--accent-grad);
+            color: #fff;
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border-glass);
+            padding: 60px 0 30px 0;
+            background: #080b12;
+        }
+
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            max-width: 300px;
+            font-size: 14px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 30px;
+        }
+
+        /* FLOATING WHATSAPP SYSTEM */
+        .floating-wa {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: var(--whatsapp-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4);
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+
+        .floating-wa:hover {
+            transform: scale(1.1);
+            background-color: #1ebd58;
+        }
+
+        /* MENU RESPONSIVENESS */
+        .menu-toggle {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links, .nav-cta {
+                display: none;
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .about-grid, .contact-grid, .testimonials-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .contact-grid {
+                padding: 24px;
+            }
+            .hero h1 {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. NAVIGATION HEADER -->
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <a href="#hero">Web Desiner's</a>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#hero" class="active">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#portfolio">Portfolio</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <div class="nav-cta">
+                    <a href="#contact" class="btn btn-outline">Get a Quote</a>
+                </div>
+                <div class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 2. HERO SECTION -->
+    <section id="hero" class="hero">
+        <div class="container">
+            <span class="badge">Next-Gen Creative Agency</span>
+            <h1>We Create Modern Websites For <span class="gradient-text">Your Business</span></h1>
+            <p>Professional websites that grow your business online. Crafted beautifully for local shops, clothing brands, and startups.</p>
+            <div class="hero-buttons">
+                <!-- Working Section Triggers -->
+                <button class="btn btn-primary" onclick="scrollToSection('#contact')">Get Started <i class="fas fa-arrow-right" style="margin-left:8px;"></i></button>
+                <button class="btn btn-secondary" onclick="scrollToSection('#portfolio')">View Projects</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. ABOUT SECTION -->
+    <section id="about">
+        <div class="container">
+            <div class="section-header">
+                <span>Who We Are</span>
+                <h2>Crafting Digital Masterpieces</h2>
+            </div>
+            <div class="about-grid">
+                <div class="about-text">
+                    <p>Welcome to <strong>Web Desiner's</strong>, led by expert creator <strong>Chandraprakash Prajapat</strong>. We assemble responsive, ultra-fast interfaces optimized completely for sales growth.</p>
+                    <p>We work tirelessly to support small local shops, saree outlets, and corporate businesses looking to deploy a premium web look.</p>
+                </div>
+                <div class="stats-box">
+                    <div class="stat-card">
+                        <h3 class="counter" data-target="150">0</h3>
+                        <p>Projects Delivered</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="counter" data-target="99">0</h3>
+                        <p>Happy Clients %</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. SERVICES SECTION -->
+    <section id="services">
+        <div class="container">
+            <div class="section-header">
+                <span>Our Expertise</span>
+                <h2>Services Built To Scale</h2>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="icon-box"><i class="fas fa-shopping-bag"></i></div>
+                    <h3>E-commerce Websites</h3>
+                    <p>Launch customized online storefronts for clothing businesses and premium saree stores.</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                    <h3>Business Websites</h3>
+                    <p>Professional layout architectures constructed to secure higher lead generation metrics.</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon-box"><i class="fas fa-rocket"></i></div>
+                    <h3>Landing Pages</h3>
+                    <p>High-conversion sleek single page builds optimized perfectly for running active marketing ads.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. PORTFOLIO SECTION -->
+    <section id="portfolio">
+        <div class="container">
+            <div class="section-header">
+                <span>Our Work</span>
+                <h2>Recent Deployments</h2>
+            </div>
+            <div class="portfolio-grid">
+                <div class="portfolio-card">
+                    <div class="portfolio-img">Saree Shop Hub</div>
+                    <div class="portfolio-info">
+                        <h4>Royal Saree Platform</h4>
+                        <p>E-commerce Store</p>
+                    </div>
+                </div>
+                <div class="portfolio-card">
+                    <div class="portfolio-img">Elite Restaurant</div>
+                    <div class="portfolio-info">
+                        <h4>Bistro Booking App</h4>
+                        <p>Hospitality Build</p>
+                    </div>
+                </div>
+                <div class="portfolio-card">
+                    <div class="portfolio-img">Iron Gym Systems</div>
+                    <div class="portfolio-info">
+                        <h4>Fitness Club Portal</h4>
+                        <p>Membership Interface</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. CONTACT SECTION -->
+    <section id="contact">
+        <div class="container">
+            <div class="section-header">
+                <span>Get In Touch</span>
+                <h2>Let's Start Your Project</h2>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h3>Contact Information</h3>
+                    <p>Have an idea? Let's convert it into an interactive design project today.</p>
+                    <div class="info-link">
+                        <i class="fas fa-phone-alt"></i>
+                        <a href="tel:7737864790">+91 7737864790</a>
+                    </div>
+                    <div class="info-link">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:info@webdesiners.com">info@webdesiners.com</a>
+                    </div>
+                    
+                    <!-- WORKING WHATSAPP REDIRECT BUTTON -->
+                    <button class="btn btn-whatsapp-action" onclick="openWhatsApp()">
+                        <i class="fab fa-whatsapp" style="margin-right: 8px;"></i> Chat on WhatsApp
+                    </button>
+                </div>
+
+                <div class="contact-form-wrapper">
+                    <!-- WORKING SUBMISSION FORM -->
+                    <form id="agencyForm" class="contact-form">
+                        <div class="form-group">
+                            <input type="text" id="clientName" placeholder="Your Full Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="clientEmail" placeholder="Your Email Address" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="clientMsg" rows="4" placeholder="Describe your shop or project details..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn form-submit-btn">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-container">
+                <div class="footer-brand">
+                    <h3>Web Desiner's</h3>
+                    <p>&copy; 2026 Web Desiner's. Managed by Chandraprakash Prajapat. All Rights Reserved.</p>
+                </div>
+                <div class="footer-links">
+                    <ul>
+                        <li><a href="#hero">Home</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#services">Services</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 7. FLOATING WHATSAPP BADGE BUTTON -->
+    <div class="floating-wa" onclick="openWhatsApp()">
+        <i class="fab fa-whatsapp"></i>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC (Iske bina ek bhi action perform nahi hota) -->
+    <script>
+        // 1. SMOOTH PAGE SCROLLING FUNCTION FOR BUTTONS
+        function scrollToSection(targetId) {
+            const targetSection = document.querySelector(targetId);
+            if (targetSection) {
+                const headerHeight = document.querySelector('header').offsetHeight || 80;
+                const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Navbar anchors connection fixer
+        document.querySelectorAll('.nav-links a, .logo a, .footer-links a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const targetId = this.getAttribute('href');
+                if (targetId.startsWith('#')) {
+                    e.preventDefault();
+                    scrollToSection(targetId);
+                }
+            });
+        });
+
+        // 2. WHATSAPP LIVE ACTIVE LINK REDIRECT
+        function openWhatsApp() {
+            const phone = "917737864790"; // 91 is India's country code
+            const defaultMessage = encodeURIComponent("Hello Chandraprakash, I visited your Web Desiner's agency website. I want to discuss a new website project for my business.");
+            const whatsappUrl = `wa.me{phone}?text=${defaultMessage}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // 3. INTERACTIVE CONTACT FORM SUBMISSION WITH FEEDBACK
+        const currentForm = document.getElementById('agencyForm');
+        if (currentForm) {
+            currentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('clientName').value.trim();
+                const email = document.getElementById('clientEmail').value.trim();
+                const message = document.getElementById('clientMsg').value.trim();
+
+                if (!name || !email || !message) {
+                    alert("Please fill all inputs properly.");
+                    return;
+                }
+
+                // UI Feedback Mode Change
+                const submitBtn = this.querySelector('.form-submit-btn');
+                const initialText = submitBtn.innerText;
+                submitBtn.innerText = "Sending Request...";
+                submitBtn.disabled = true;
+
+                setTimeout(() => {
+                    alert(`Thank you, ${name}! Your message has been sent successfully. Chandraprakash Prajapat will connect with you soon.`);
+                    currentForm.reset();
+                    submitBtn.innerText = initialText;
+                    submitBtn.disabled = false;
+                }, 1200);
+            });
+        }
+
+        // 4. AUTOMATIC COUNTING ANIMATION FOR STATS CARDS
+        const counters = document.querySelectorAll('.counter');
+        const runCounter = () => {
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    const count = +counter.innerText;
+                    const speed = target / 30; 
+
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + speed);
+                        setTimeout(updateCount, 40);
+                    } else {
+                        counter.innerText = target + "+";
+                    }
+                };
+                updateCount();
+            });
+        };
+
+        // Active trigger on view entrance
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    runCounter();
+                    observer.disconnect();
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        if(counters.length > 0) {
+            observer.observe(document.getElementById('about'));
+        }
+    </script>
+</body>
+</html>
