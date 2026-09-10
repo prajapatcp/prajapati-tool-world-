@@ -1,4 +1,4 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -55,16 +55,34 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 <div id="onboarding" class="onboarding"><div class="onboard-card">
 <div class="onboard-logo"><span>◆</span> aapni dukan</div>
 <div id="authScreen">
-<div class="onboard-sub">Welcome back. Login to continue to your business.</div>
-<h2 style="margin:0 0 18px">Login</h2>
-<form id="authForm" class="onboard-form">
-<div class="field"><label>Email </label><input id="authId" required autocomplete="username" placeholder="Enter email"></div>
-<div class="field"><label>Password</label><input id="authPassword" required type="password" autocomplete="current-password" placeholder="Enter password"></div>
-<button class="onboard-btn" id="authSubmit" type="submit">Login</button>
-</form>
-<div id="authMessage" class="onboard-note"></div>
-<div style="text-align:center;margin-top:18px;font-size:13px;color:#667085">Don't have an account?
-<button type="button" style="border:0;background:none;color:#3158d9;font-weight:800;cursor:pointer" onclick="showCreateAccount()">Create New Account</button></div>
+
+  <div class="onboard-sub">
+    Enter password to open Aapni Dukan
+  </div>
+
+  <h2 style="margin:0 0 18px">Aapni Dukan</h2>
+
+  <form id="authForm" class="onboard-form">
+
+    <div class="field">
+      <label>Password</label>
+      <input
+        id="authPassword"
+        type="password"
+        placeholder="Enter password"
+        autocomplete="off"
+        required
+      >
+    </div>
+
+    <button class="onboard-btn" type="submit">
+      Unlock
+    </button>
+
+  </form>
+
+  <div id="authMessage" class="onboard-note"></div>
+
 </div>
 
 <div id="signupScreen" style="display:none">
@@ -149,9 +167,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 
 <script>
 const KEY="aapniDukanData";
-const AUTH_KEY="aapniDukanAuth",USER_KEY="aapniDukanUser",BUSINESS_KEY="aapniDukanBusiness";
-let authUsers=JSON.parse(localStorage.getItem(AUTH_KEY)||"{}"),currentUser=JSON.parse(localStorage.getItem(USER_KEY)||"null");
-function saveAuthUsers(){localStorage.setItem(AUTH_KEY,JSON.stringify(authUsers))}
+const USER_KEY="aapniDukanUser",BUSINESS_KEY="aapniDukanBusiness";
+let currentUser=null;
 function showLogin(){
   authScreen.style.display="block"; signupScreen.style.display="none"; otpScreen.style.display="none"; businessScreen.style.display="none"; businessDetailsScreen.style.display="none";
   authMessage.textContent="";
@@ -223,17 +240,75 @@ function selectBusinessType(type){
  loadBusinessSetup();
 }
 function finishExistingApp(){onboarding.classList.add("hidden");renderAll();go("dashboard")}
-function logoutApp(){localStorage.removeItem(USER_KEY);localStorage.removeItem(BUSINESS_KEY);currentUser=null;onboarding.classList.remove("hidden");authScreen.style.display="block";signupScreen.style.display="none";businessScreen.style.display="none";businessDetailsScreen.style.display="none";otpScreen.style.display="none";authId.value="";authPassword.value="";showAuth("login")}
+function logoutApp(){
+
+  onboarding.classList.remove("hidden");
+
+  authScreen.style.display = "block";
+  signupScreen.style.display = "none";
+  otpScreen.style.display = "none";
+  businessScreen.style.display = "none";
+  businessDetailsScreen.style.display = "none";
+
+  authPassword.value = "";
+  authMessage.textContent = "";
+
+  setTimeout(() => {
+    authPassword.focus();
+  }, 100);
+}
 
 const seed={products:[
-{id:1,name:"Designer Saree",sku:"DS-001",category:"Saree",brand:"Rangoli",purchase:380,sell:550,mrp:699,stock:25,min:10,gst:5,unit:"pcs",size:"Free",color:"Multi",supplier:""},
-{id:2,name:"Organza Saree",sku:"OS-002",category:"Saree",brand:"Rangoli",purchase:450,sell:650,mrp:799,stock:8,min:15,gst:5,unit:"pcs",size:"Free",color:"Pista",supplier:""}],
+ {id:1,name:"cutter machine",sku:"HI-CM4SA",category:"tools",brand:"",purchase:1050,sell:1800,mrp:0,stock:3,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:2,name:"cutter machine",sku:"HS-725BK",category:"tools",brand:"",purchase:2250,sell:2800,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},{id:3,name:"cutter machine",sku:"xpt-412",category:"tools",brand:"",purchase:2200,sell:2800,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:4,name:"cutter machine",sku:"3-110",category:"tools",brand:"",purchase:2450,sell:3400,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:5,name:"cutter machine",sku:"MP-4SA",category:"tools",brand:"",purchase:1250,sell:1800,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:6,name:"cutter machine",sku:"CM4SB",category:"tools",brand:"",purchase:1300,sell:2100,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+
+ {id:7,name:"GLANDER",sku:"3-100A",category:"tools",brand:"",purchase:1625,sell:1900,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:8,name:"GLANDER",sku:"XPT405",category:"tools",brand:"",purchase:1800,sell:2150,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:9,name:"GLANDER",sku:"XPT401",category:"tools",brand:"",purchase:1800,sell:2150,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:10,name:"GLANDER",sku:"HN-801",category:"tools",brand:"",purchase:800,sell:1200,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:11,name:"GLANDER",sku:"DWE7050S",category:"tools",brand:"",purchase:2300,sell:3100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:12,name:"GLANDER",sku:"04-100A",category:"tools",brand:"",purchase:1700,sell:2100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:13,name:"GLANDER",sku:"GWS600",category:"tools",brand:"",purchase:2000,sell:2800,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:14,name:"GLANDER",sku:"DSJ25B",category:"tools",brand:"",purchase:1600,sell:1900,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:15,name:"GLANDER",sku:"M9512B",category:"tools",brand:"",purchase:2888,sell:3300,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:16,name:"GLANDER 5'",sku:"02-125B",category:"tools",brand:"",purchase:2800,sell:3500,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:17,name:"DRILL",sku:"02-6A",category:"tools",brand:"",purchase:1475,sell:1850,mrp:0,stock:2,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:18,name:"DRILL",sku:"AJZ10A",category:"tools",brand:"",purchase:1525,sell:1750,mrp:0,stock:2,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:19,name:"DRILL",sku:"02-13",category:"tools",brand:"",purchase:1730,sell:2100,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:20,name:"DRILL",sku:"2310",category:"tools",brand:"",purchase:470,sell:900,mrp:0,stock:3,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:21,name:"DRILL",sku:"IC-024",category:"tools",brand:"",purchase:1050,sell:1200,mrp:0,stock:0,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:22,name:"DRILL YRLLOW",sku:"UNK-13RF",category:"tools",brand:"",purchase:1675,sell:2100,mrp:0,stock:0,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+
+ {id:23,name:"SCREWDRIVER",sku:"XPT429",category:"tools",brand:"",purchase:1025,sell:1300,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:24,name:"JIG SAW",sku:"IC-027",category:"tools",brand:"",purchase:2000,sell:2500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:25,name:"SCREWDRIVER",sku:"08-10",category:"tools",brand:"",purchase:1850,sell:2500,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:26,name:"SCREWDRIVER",sku:"DPL8",category:"tools",brand:"",purchase:2950,sell:3500,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:27,name:"SCREWDRIVER CRODLESS",sku:"XPC-DM-02",category:"tools",brand:"",purchase:4100,sell:4500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:28,name:"SCREWDRIVER CRODLESS",sku:"XPC-IS-02",category:"tools",brand:"",purchase:2400,sell:4100,mrp:0,stock:0,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+
+ {id:29,name:"2-20 HAMMER",sku:"WT 2-20",category:"tools",brand:"",purchase:1700,sell:2500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:30,name:"2-20 HAMMER",sku:"DJZ2-20",category:"tools",brand:"",purchase:3500,sell:4200,mrp:0,stock:2,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:31,name:"2-20 HAMMER",sku:"ST2-20",category:"tools",brand:"",purchase:1700,sell:2000,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:32,name:"2-26 HAMMER",sku:"HI-2-26",category:"tools",brand:"",purchase:2300,sell:3000,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:33,name:"2-26 HAMMER",sku:"XPT-435",category:"tools",brand:"",purchase:3900,sell:4500,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:34,name:"3-26B",sku:"3-26B",category:"tools",brand:"",purchase:2700,sell:3500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:35,name:"DEMOLITION HAMMER",sku:"810",category:"tools",brand:"",purchase:4900,sell:6100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:36,name:"DEMOLITION HAMMER",sku:"835",category:"tools",brand:"",purchase:6000,sell:7100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+],
 customers:[
 {id:1,name:"Ramesh Garments",shop:"Ramesh Garments",mobile:"9876543210",address:"Udaipur",gstin:"",opening:0,credit:50000,interestRate:12,interestGraceMonths:1},
 {id:2,name:"Shree Fashion",shop:"Shree Fashion",mobile:"9876500000",address:"Jaipur",gstin:"",opening:0,credit:30000,interestRate:12,interestGraceMonths:1}],
 suppliers:[],orders:[],payments:[],purchases:[],returns:[],settings:{business:"Aapni Dukan",address:"",mobile:"",gstin:"",bank:"",account:"",ifsc:"",upi:"",terms:"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment."}
 };
-let db=JSON.parse(localStorage.getItem(KEY)||"null")||seed;
+let db = JSON.parse(localStorage.getItem(KEY) || "null");
+
+if (!db || !Array.isArray(db.products) || db.products.length < 36) {
+  db = JSON.parse(JSON.stringify(seed));
+  localStorage.setItem(KEY, JSON.stringify(db));
+}
 db.products=Array.isArray(db.products)?db.products:[];
 db.customers=Array.isArray(db.customers)?db.customers:[];
 db.orders=Array.isArray(db.orders)?db.orders:[];
@@ -488,28 +563,32 @@ businessDetailsForm.onsubmit=function(e){
  renderAll();
  go("dashboard");
 };
-authForm.onsubmit=function(e){
- e.preventDefault();
- let key=authId.value.trim().toLowerCase(), pass=authPassword.value;
- let u=authUsers[key];
- if(!u||u.password!==pass){authMessage.textContent="Incorrect email or password.";return}
- currentUser={id:u.id,name:u.name};localStorage.setItem(USER_KEY,JSON.stringify(currentUser));
- if(localStorage.getItem(BUSINESS_KEY)==="manufacturer")finishExistingApp();else showBusinessChoice();
-};
+const APP_PASSWORD = "454545";
 
-signupForm.onsubmit=function(e){
- e.preventDefault();
- let key=signupId.value.trim().toLowerCase(), pass=signupPassword.value, confirm=signupConfirm.value;
- if(pass.length<6){signupMessage.textContent="Password must be at least 6 characters.";return}
- if(pass!==confirm){signupMessage.textContent="Passwords do not match.";return}
- if(authUsers[key]){signupMessage.textContent="Account already exists. Please login.";return}
- pendingSignup={id:key,password:pass,name:signupName.value.trim()||"Business Owner"};
- sendSignupOtp();
-};
+const authFormEl = document.getElementById("authForm");
+const authPasswordEl = document.getElementById("authPassword");
+const authMessageEl = document.getElementById("authMessage");
+const onboardingEl = document.getElementById("onboarding");
+
+authFormEl.addEventListener("submit", function(e){
+  e.preventDefault();
+
+  if(authPasswordEl.value === APP_PASSWORD){
+    authMessageEl.textContent = "";
+    authPasswordEl.value = "";
+    currentUser = {id:"owner", name:"Owner"};
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+    onboardingEl.classList.add("hidden");
+    renderAll();
+    go("dashboard");
+  } else {
+    authMessageEl.textContent = "Wrong password. Please try again.";
+    authPasswordEl.value = "";
+    authPasswordEl.focus();
+  }
+});
 
 showLogin();
-
-renderAll();
 </script>
 </body>
 </html>
