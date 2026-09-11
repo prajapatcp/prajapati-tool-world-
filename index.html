@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,6 +166,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 
 <div id="modalBg" class="modalbg"><div class="modal" id="modal"></div></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 const KEY="aapniDukanData";
 const USER_KEY="aapniDukanUser",BUSINESS_KEY="aapniDukanBusiness";
@@ -303,24 +306,81 @@ customers:[
 {id:2,name:"Shree Fashion",shop:"Shree Fashion",mobile:"9876500000",address:"Jaipur",gstin:"",opening:0,credit:30000,interestRate:12,interestGraceMonths:1}],
 suppliers:[],orders:[],payments:[],purchases:[],returns:[],settings:{business:"Aapni Dukan",address:"",mobile:"",gstin:"",bank:"",account:"",ifsc:"",upi:"",terms:"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment."}
 };
-let db = JSON.parse(localStorage.getItem(KEY) || "null");
+const firebaseConfig = {
+  apiKey: "AIzaSyAbKNJ84m1ZVw7wjXDMIIw40tVoz8kL6YA",
+  authDomain: "aapni-dukan-e6b58.firebaseapp.com",
+  projectId: "aapni-dukan-e6b58",
+  storageBucket: "aapni-dukan-e6b58.firebasestorage.app",
+  messagingSenderId: "239815807594",
+  appId: "1:239815807594:web:bd24494d465abd64aab013"
+};
 
-if (!db || !Array.isArray(db.products) || db.products.length < 36) {
-  db = JSON.parse(JSON.stringify(seed));
-  localStorage.setItem(KEY, JSON.stringify(db));
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const firestore = firebase.firestore();
+const CLOUD_DOC = firestore.collection("aapniDukan").doc("main");
+let db = JSON.parse(localStorage.getItem(KEY)||"null") || JSON.parse(JSON.stringify(seed));
+let cloudReady = false;
+let cloudSaving = false;
+let cloudSaveTimer = null;
+
+function normalizeDb(data){
+  data=data&&typeof data==='object'?data:{};
+  data.products=Array.isArray(data.products)?data.products:[];
+  data.customers=Array.isArray(data.customers)?data.customers:[];
+  data.orders=Array.isArray(data.orders)?data.orders:[];
+  data.payments=Array.isArray(data.payments)?data.payments:[];
+  data.purchases=Array.isArray(data.purchases)?data.purchases:[];
+  data.returns=Array.isArray(data.returns)?data.returns:[];
+  data.settings=data.settings&&typeof data.settings==='object'?data.settings:{};
+  data.customers.forEach(c=>{if(c.interestRate==null)c.interestRate=12;if(c.interestGraceMonths==null)c.interestGraceMonths=1;if(c.opening==null)c.opening=0;if(c.credit==null)c.credit=0;});
+  return data;
 }
-db.products=Array.isArray(db.products)?db.products:[];
-db.customers=Array.isArray(db.customers)?db.customers:[];
-db.orders=Array.isArray(db.orders)?db.orders:[];
-db.payments=Array.isArray(db.payments)?db.payments:[];
-db.purchases=Array.isArray(db.purchases)?db.purchases:[];
-db.returns=Array.isArray(db.returns)?db.returns:[];
-db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
-db.customers.forEach(c=>{if(c.interestRate==null)c.interestRate=12;if(c.interestGraceMonths==null)c.interestGraceMonths=1;if(c.opening==null)c.opening=0;if(c.credit==null)c.credit=0;});
+
 function isWholesaler(){return localStorage.getItem(BUSINESS_KEY)==="wholesaler"}
 function updatePurchasesNav(){let n=document.getElementById("purchasesNav");if(n)n.style.display=isWholesaler()?"block":"none"}
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(db));
+  if(!cloudReady)return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(async()=>{
+    try{
+      cloudSaving=true;
+      await CLOUD_DOC.set(db);
+      cloudSaving=false;
+    }catch(err){
+      cloudSaving=false;
+      console.error("Firebase save failed",err);
+      alert("Cloud save failed. Please check your internet connection.");
+    }
+  },150);
+}
+
+async function initCloud(){
+  try{
+    const snap=await CLOUD_DOC.get();
+    if(snap.exists){
+      db=normalizeDb(snap.data());
+      // If an older cloud copy has fewer than the new 36 seed products, restore missing seed products.
+      const existingIds=new Set(db.products.map(p=>Number(p.id)));
+      const missing=seed.products.filter(p=>!existingIds.has(Number(p.id)));
+      if(missing.length){db.products.push(...JSON.parse(JSON.stringify(missing)));await CLOUD_DOC.set(db);}
+    }else{
+      db=normalizeDb(JSON.parse(JSON.stringify(seed)));
+      await CLOUD_DOC.set(db);
+    }
+    localStorage.setItem(KEY,JSON.stringify(db));
+    cloudReady=true;
+    renderAll();
+    go("dashboard");
+  }catch(err){
+    console.error("Firebase load failed",err);
+    db=normalizeDb(JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(JSON.stringify(seed)));
+    renderAll();
+    go("dashboard");
+    alert("Firebase data could not be loaded. The app is using this device's saved data for now.");
+  }
+}
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2})}
 function id(){return Date.now()+Math.floor(Math.random()*999)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
@@ -589,6 +649,7 @@ authFormEl.addEventListener("submit", function(e){
 });
 
 showLogin();
+initCloud();
 </script>
 </body>
 </html>
