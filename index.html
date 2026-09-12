@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -384,14 +385,14 @@ async function initCloud(){
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2})}
 function id(){return Date.now()+Math.floor(Math.random()*999)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function outstanding(c){let sale=db.orders.filter(o=>o.customerId===c.id).reduce((a,o)=>a+o.total-o.paid,0);let pay=db.payments.filter(p=>p.customerId===c.id).reduce((a,p)=>a+p.amount,0);return Number(c.opening||0)+sale-pay}
-function todaySales(){let d=new Date().toDateString();return db.orders.filter(o=>new Date(o.date).toDateString()===d).reduce((a,o)=>a+o.total,0)}
-function todayOrders(){let d=new Date().toDateString();return db.orders.filter(o=>new Date(o.date).toDateString()===d).length}
+function outstanding(c){let sale=db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).reduce((a,o)=>a+Number(o.total||0)-Number(o.paid||0),0);let pay=db.payments.filter(p=>p.customerId===c.id).reduce((a,p)=>a+Number(p.amount||0),0);return Number(c.opening||0)+sale-pay}
+function todaySales(){let d=new Date().toDateString();return db.orders.filter(o=>!o.cancelled&&new Date(o.date).toDateString()===d).reduce((a,o)=>a+Number(o.total||0),0)}
+function todayOrders(){let d=new Date().toDateString();return db.orders.filter(o=>!o.cancelled&&new Date(o.date).toDateString()===d).length}
 function totalOutstanding(){return db.customers.reduce((a,c)=>a+Math.max(0,outstanding(c)),0)}
 function lowStock(){return db.products.filter(p=>p.stock>0&&p.stock<=p.min).length}
 function head(title,sub,action=""){return `<div class="top"><div><h1>${title}</h1><div class="muted">${sub}</div></div><div class="actions">${action}</div></div>`}
 function renderDashboard(){
-let recent=db.orders.slice(-5).reverse();
+let recent=db.orders.filter(o=>!o.cancelled).slice(-5).reverse();
 document.getElementById("dashboard").innerHTML=head("Dashboard","Everything important for your wholesale business, in one place.",`<input class="search" id="globalSearch" placeholder="⌕ Search anything..."><button class="primary" onclick="openOrder()">+ Create Order</button>`)+
 `<div class="cards">
 <div class="card metric"><div class="label">Today's Sales</div><div class="value">${money(todaySales())}</div><div class="green">Live data</div></div>
@@ -454,10 +455,367 @@ function addStock(pid){let p=db.products.find(x=>x.id===pid), q=prompt(`Add stoc
 function renderCustomers(){
 document.getElementById("customers").innerHTML=head("Customers","Manage retailers, balances and transaction history.",`<button class="primary" onclick="openCustomer()">+ Add Customer</button>`)+`<div class="panel"><div class="toolbar"><input class="input" id="csearch" placeholder="Search customer or mobile..." oninput="renderCustomersTable()"></div><div id="ctable"></div></div>`;renderCustomersTable()
 }
-function renderCustomersTable(){let q=(document.getElementById("csearch")?.value||"").toLowerCase(),a=db.customers.filter(c=>(c.name+" "+c.shop+" "+c.mobile).toLowerCase().includes(q));document.getElementById("ctable").innerHTML=`<div class="tablewrap"><table><thead><tr><th>Customer</th><th>Mobile</th><th>Total Orders</th><th>Outstanding</th><th>Actions</th></tr></thead><tbody>${a.map(c=>`<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.shop)}</span></td><td>${esc(c.mobile)}</td><td>${db.orders.filter(o=>o.customerId===c.id).length}</td><td class="${outstanding(c)>0?'red':'green'}"><b>${money(outstanding(c))}</b></td><td><button class="smallbtn" onclick="openCustomer(${c.id})">Edit</button> <button class="smallbtn" onclick="openPayment(${c.id})">Receive</button> <button class="smallbtn" onclick="showCustomerLedger(${c.id})">Ledger</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">No customers</td></tr>`}</tbody></table></div>`}
+function renderCustomersTable(){let q=(document.getElementById("csearch")?.value||"").toLowerCase(),a=db.customers.filter(c=>(c.name+" "+c.shop+" "+c.mobile).toLowerCase().includes(q));document.getElementById("ctable").innerHTML=`<div class="tablewrap"><table><thead><tr><th>Customer</th><th>Mobile</th><th>Total Orders</th><th>Outstanding</th><th>Actions</th></tr></thead><tbody>${a.map(c=>`<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.shop)}</span></td><td>${esc(c.mobile)}</td><td>${db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).length}</td><td class="${outstanding(c)>0?'red':'green'}"><b>${money(outstanding(c))}</b></td><td><button class="smallbtn" onclick="openCustomer(${c.id})">Edit</button> <button class="smallbtn" onclick="openPayment(${c.id})">Receive</button> <button class="smallbtn" onclick="showCustomerLedger(${c.id})">Ledger</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">No customers</td></tr>`}</tbody></table></div>`}
 function openCustomer(cid=null){let c=db.customers.find(x=>x.id===cid)||{};showModal(`<div class="modalhead"><h2>${cid?"Edit":"Add"} Customer</h2><button class="close" onclick="closeModal()">×</button></div><form id="customerForm"><div class="formgrid">${field("name","Customer Name",c.name,true)}${field("shop","Shop Name",c.shop)}${field("mobile","Mobile",c.mobile)}${field("email","Email",c.email)}${field("address","Address",c.address)}${field("gstin","GSTIN",c.gstin)}${field("opening","Opening Balance",c.opening||0,"number")}${field("credit","Credit Limit",c.credit||0,"number")}</div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Customer</button></div></form>`);document.getElementById("customerForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),old=cid?db.customers.find(x=>x.id===cid):null,o={id:cid||id(),name:f.get("name"),shop:f.get("shop")||f.get("name"),mobile:f.get("mobile"),email:f.get("email"),address:f.get("address"),gstin:f.get("gstin"),opening:+f.get("opening")||0,credit:+f.get("credit")||0,interestRate:old?.interestRate??12,interestGraceMonths:old?.interestGraceMonths??1};if(cid)db.customers=db.customers.map(x=>x.id===cid?o:x);else db.customers.push(o);save();closeModal();renderAll();go("customers")}}
-function renderOrders(){document.getElementById("orders").innerHTML=head("Orders","Create and manage wholesale sales.",`<button class="primary" onclick="openOrder()">+ Create Order</button>`)+`<div class="panel"><div class="tablewrap"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Paid</th><th>Balance</th><th>Date</th></tr></thead><tbody>${db.orders.slice().reverse().map(o=>`<tr><td>#${o.id}</td><td>${esc(customerName(o.customerId))}</td><td>${o.items.length}</td><td>${money(o.total)}</td><td>${money(o.paid)}</td><td class="${o.total-o.paid>0?'red':'green'}">${money(o.total-o.paid)}</td><td>${new Date(o.date).toLocaleDateString("en-IN")}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">No orders yet. Click Create Order.</td></tr>`}</tbody></table></div></div>`}
-function openOrder(){if(!db.customers.length||!db.products.length){alert("Add at least one customer and one product first.");return}let products=db.products.filter(p=>p.stock>0),row=()=>`<div class="order-product-row formgrid" style="margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;position:relative"><div class="field"><label>Product</label><select name="product">${products.map(p=>`<option value="${p.id}">${esc(p.name)} — ${p.stock} in stock</option>`).join("")}</select></div>${field("qty","Quantity",1,"number")}${field("price","Selling Price",products[0]?.sell||0,"number")}${field("discount","Discount",0,"number")}<div class="field"><label>Amount</label><input name="amount" readonly value="0"></div><button type="button" class="secondary remove-product" style="align-self:end">Remove</button></div>`;showModal(`<div class="modalhead"><h2>Create Order</h2><button class="close" onclick="closeModal()">×</button></div><form id="orderForm"><div class="formgrid"><div class="field"><label>Customer</label><select name="customer" required>${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div></div><div id="orderProducts">${row()}</div><button type="button" class="primary" id="addProduct">+ Add Product</button>${field("paid","Paid Amount",0,"number")}<div id="orderTotal" style="margin-top:15px;font-size:20px;font-weight:800"></div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Create Order & Invoice</button></div></form>`);let form=document.getElementById("orderForm"),box=document.getElementById("orderProducts");function sync(){let total=0;box.querySelectorAll(".order-product-row").forEach(r=>{let s=r.querySelector('[name=product]'),p=db.products.find(x=>x.id==s.value),price=r.querySelector('[name=price]'),qty=r.querySelector('[name=qty]'),disc=r.querySelector('[name=discount]');if(document.activeElement!==price)price.value=p?.sell||0;let amount=Math.max(0,(+qty.value||0)*(+price.value||0)-(+disc.value||0));r.querySelector('[name=amount]').value=amount;total+=amount});document.getElementById("orderTotal").textContent="Total: "+money(total)}function bind(r){r.querySelector('[name=product]').onchange=()=>{r.querySelector('[name=price]').value=db.products.find(p=>p.id==r.querySelector('[name=product]').value)?.sell||0;sync()};r.querySelectorAll("input,select").forEach(x=>x.oninput=sync);r.querySelector(".remove-product").onclick=()=>{if(box.children.length>1){r.remove();sync()}}}bind(box.firstElementChild);document.getElementById("addProduct").onclick=()=>{box.insertAdjacentHTML("beforeend",row());bind(box.lastElementChild);sync()};sync();form.onsubmit=e=>{e.preventDefault();let items=[],total=0,valid=true;box.querySelectorAll(".order-product-row").forEach(r=>{let p=db.products.find(x=>x.id==r.querySelector('[name=product]').value),qty=+r.querySelector('[name=qty]').value||0,price=+r.querySelector('[name=price]').value||0,discount=+r.querySelector('[name=discount]').value||0;if(!p||qty<=0||qty>p.stock)valid=false;let amount=Math.max(0,qty*price-discount);items.push({productId:p.id,name:p.name,qty,price,discount});total+=amount});if(!valid){alert("Invalid quantity or insufficient stock.");return}db.orders.push({id:id(),customerId:+form.customer.value,items,total,paid:+form.paid.value||0,date:new Date().toISOString()});items.forEach(i=>db.products.find(p=>p.id===i.productId).stock-=i.qty);save();closeModal();renderAll();go("orders")}}
+function renderOrders(){
+
+  document.getElementById("orders").innerHTML =
+    head(
+      "Orders",
+      "Create and manage wholesale sales.",
+      `<button class="primary" onclick="openOrder()">+ Create Order</button>`
+    ) +
+
+    `<div class="panel">
+
+      <div class="toolbar">
+        <div class="left">
+
+          <div class="field">
+            <label>📅 Tarikh chune</label>
+            <input
+              class="input"
+              type="date"
+              id="orderDateFilter"
+              onchange="showOrdersByDate()"
+            >
+          </div>
+
+          <button
+            class="secondary"
+            onclick="clearOrderDateFilter()"
+            style="align-self:end"
+          >
+            Sabhi Orders
+          </button>
+
+        </div>
+      </div>
+
+      <div id="dateOrderResult"></div>
+
+    </div>`;
+
+  showOrdersByDate();
+}
+function showOrdersByDate(){
+
+  const selectedDate =
+    document.getElementById("orderDateFilter")?.value || "";
+
+  let orders = db.orders.slice().reverse();
+
+  if(selectedDate){
+
+    orders = orders.filter(o => {
+
+      const d = new Date(o.date);
+
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}` === selectedDate;
+    });
+
+  }
+
+  const result = document.getElementById("dateOrderResult");
+
+  if(!orders.length){
+
+    result.innerHTML =
+      `<div class="empty">
+        Is tarikh ko koi order nahi mila.
+      </div>`;
+
+    return;
+  }
+
+  result.innerHTML = `
+
+    <div style="margin-bottom:18px">
+
+      <h3>
+        ${selectedDate
+          ? "📅 " + new Date(selectedDate + "T00:00:00")
+              .toLocaleDateString("en-IN")
+          : "📋 Sabhi Orders"}
+      </h3>
+
+      <p class="muted">
+        Total Orders: <b>${orders.length}</b>
+      </p>
+
+    </div>
+
+    <div class="tablewrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Samaan</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Date / Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${orders.map(o => {
+
+            const customer =
+              db.customers.find(c => c.id === o.customerId) || {};
+
+            const itemNames =
+              o.items.map(i =>
+                `<div>
+                  <b>${esc(i.name)}</b>
+                  × ${i.qty}
+                </div>`
+              ).join("");
+
+            const totalQty =
+              o.items.reduce((a,i) => a + Number(i.qty || 0), 0);
+
+            const balance =
+              Number(o.total || 0) - Number(o.paid || 0);
+
+            return `
+
+              <tr>
+
+                <td>
+                  <b>#${o.id}</b>
+                </td>
+
+                <td>
+                  <b>${esc(customer.name || "Unknown")}</b>
+                  <br>
+                  <span class="muted">
+                    ${esc(customer.shop || "")}
+                  </span>
+                  <br>
+                  <span class="muted">
+                    ${esc(customer.mobile || "")}
+                  </span>
+                </td>
+
+                <td>
+                  ${itemNames}
+                </td>
+
+                <td>
+                  ${totalQty}
+                </td>
+
+                <td>
+                  <b>${money(o.total)}</b>
+                </td>
+
+                <td>
+                  ${money(o.paid)}
+                </td>
+
+                <td class="${balance > 0 ? "red" : "green"}">
+                  ${money(balance)}
+                </td>
+
+                <td>
+                  ${new Date(o.date).toLocaleString("en-IN")}
+                </td>
+                <td>
+                  ${o.cancelled
+                    ? `<button class="danger" disabled style="opacity:.6;cursor:not-allowed">Cancelled</button>`
+                    : `<button class="danger" onclick="cancelOrderNew(${o.id})">Cancel Order</button>`}
+                </td>
+
+              </tr>
+
+            `;
+
+          }).join("")}
+
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
+}
+function clearOrderDateFilter(){
+
+  const input = document.getElementById("orderDateFilter");
+
+  if(input){
+    input.value = "";
+  }
+
+  showOrdersByDate();
+}
+
+function openOrder(){
+  if(!db.customers.length||!db.products.length){
+    alert("Add at least one customer and one product first.");
+    return;
+  }
+
+  let products=db.products.filter(p=>Number(p.stock)>0);
+
+  const productOptions=(list,selectedId="")=>list.map(p=>
+    `<option value="${p.id}" ${String(p.id)===String(selectedId)?"selected":""}>${esc(p.name)} — ${esc(p.sku||"No SKU")}</option>`
+  ).join("");
+
+  const row=()=>`<div class="order-product-row formgrid" style="margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;position:relative">
+    <div class="field">
+      <label>Product Search</label>
+      <input class="input product-search" type="text" placeholder="Search product name or SKU..." autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Product</label>
+      <select name="product">${productOptions(products)}</select>
+    </div>
+    ${field("qty","Quantity",1,"number")}
+    ${field("price","Selling Price",products[0]?.sell||0,"number")}
+    ${field("discount","Discount",0,"number")}
+    <div class="field"><label>Amount</label><input name="amount" readonly value="0"></div>
+    <button type="button" class="secondary remove-product" style="align-self:end">Remove</button>
+  </div>`;
+
+  showModal(`<div class="modalhead"><h2>Create Order</h2><button class="close" onclick="closeModal()">×</button></div>
+  <form id="orderForm">
+    <div class="formgrid">
+      <div class="field"><label>Customer</label><select name="customer" required>${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+    </div>
+    <div id="orderProducts">${row()}</div>
+    <button type="button" class="primary" id="addProduct">+ Add Product</button>
+    ${field("paid","Paid Amount",0,"number")}
+    <div id="orderTotal" style="margin-top:15px;font-size:20px;font-weight:800"></div>
+    <div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Create Order & Invoice</button></div>
+  </form>`);
+
+  let form=document.getElementById("orderForm"),box=document.getElementById("orderProducts");
+
+  function sync(){
+    let total=0;
+    box.querySelectorAll(".order-product-row").forEach(r=>{
+      let s=r.querySelector('[name=product]');
+      let p=db.products.find(x=>x.id==s.value);
+      let price=r.querySelector('[name=price]');
+      let qty=r.querySelector('[name=qty]');
+      let disc=r.querySelector('[name=discount]');
+      if(document.activeElement!==price) price.value=p?.sell||0;
+      let amount=Math.max(0,(+qty.value||0)*(+price.value||0)-(+disc.value||0));
+      r.querySelector('[name=amount]').value=amount;
+      total+=amount;
+    });
+    document.getElementById("orderTotal").textContent="Total: "+money(total);
+  }
+
+  function filterProducts(r){
+    let search=r.querySelector('.product-search');
+    let select=r.querySelector('[name=product]');
+    let term=(search.value||'').trim().toLowerCase();
+    let current=select.value;
+    let filtered=products.filter(p=>
+      !term ||
+      String(p.name||'').toLowerCase().includes(term) ||
+      String(p.sku||'').toLowerCase().includes(term)
+    );
+
+    select.innerHTML=productOptions(filtered,current);
+
+    if(!filtered.length){
+      select.innerHTML='<option value="">No product found</option>';
+    }else if(!filtered.some(p=>String(p.id)===String(current))){
+      select.value=String(filtered[0].id);
+    }
+
+    let selected=db.products.find(p=>String(p.id)===String(select.value));
+    if(selected) search.value=term;
+    sync();
+  }
+
+  function bind(r){
+    r.querySelector('[name=product]').onchange=()=>{
+      let p=db.products.find(x=>x.id==r.querySelector('[name=product]').value);
+      r.querySelector('[name=price]').value=p?.sell||0;
+      sync();
+    };
+
+    r.querySelector('.product-search').oninput=()=>filterProducts(r);
+
+    r.querySelectorAll('input,select').forEach(x=>{
+      if(!x.classList.contains('product-search')) x.oninput=sync;
+    });
+
+    r.querySelector('.remove-product').onclick=()=>{
+      if(box.children.length>1){
+        r.remove();
+        sync();
+      }
+    };
+  }
+
+  bind(box.firstElementChild);
+
+  document.getElementById("addProduct").onclick=()=>{
+    box.insertAdjacentHTML("beforeend",row());
+    bind(box.lastElementChild);
+    sync();
+  };
+
+  sync();
+
+  form.onsubmit=e=>{
+    e.preventDefault();
+    let items=[],total=0,valid=true;
+
+    box.querySelectorAll('.order-product-row').forEach(r=>{
+      let p=db.products.find(x=>x.id==r.querySelector('[name=product]').value);
+      let qty=+r.querySelector('[name=qty]').value||0;
+      let price=+r.querySelector('[name=price]').value||0;
+      let discount=+r.querySelector('[name=discount]').value||0;
+
+      if(!p||qty<=0||qty>Number(p.stock||0)) valid=false;
+
+      let amount=Math.max(0,qty*price-discount);
+      if(p) items.push({productId:p.id,name:p.name,qty,price,discount});
+      total+=amount;
+    });
+
+    if(!valid){
+      alert("Invalid quantity or insufficient stock.");
+      return;
+    }
+
+    db.orders.push({
+      id:id(),
+      customerId:+form.customer.value,
+      items,
+      total,
+      paid:+form.paid.value||0,
+      date:new Date().toISOString()
+    });
+
+    items.forEach(i=>{
+      let p=db.products.find(p=>p.id===i.productId);
+      if(p) p.stock-=i.qty;
+    });
+
+    save();
+    closeModal();
+    renderAll();
+    go("orders");
+  };
+}
 function renderInvoices(){
 document.getElementById("invoices").innerHTML=head("Billing / Invoices","Invoices are created from real orders.",`<button class="primary" onclick="openOrder()">+ Create Invoice</button>`);
 let rows=db.orders.slice().reverse().map(o=>{
@@ -548,10 +906,10 @@ function customerLedgerData(cid,month){
  let c=db.customers.find(x=>x.id===cid); if(!c)return null;
  let [y,m]=month.split('-').map(Number),start=new Date(y,m-1,1),end=new Date(y,m,1);
  let opening=Number(c.opening||0);
- db.orders.filter(o=>o.customerId===cid&&new Date(o.date)<start).forEach(o=>opening+=Number(o.total||0));
+ db.orders.filter(o=>o.customerId===cid&&!o.cancelled&&new Date(o.date)<start).forEach(o=>opening+=Number(o.total||0));
  db.payments.filter(p=>p.customerId===cid&&new Date(p.date)<start).forEach(p=>opening-=Number(p.amount||0));
  let tx=[];
- db.orders.filter(o=>o.customerId===cid).forEach(o=>{let dt=new Date(o.date);if(dt>=start&&dt<end)tx.push({date:dt,type:'Sale',particulars:'Bill No. '+o.id,debit:Number(o.total||0),credit:0});});
+ db.orders.filter(o=>o.customerId===cid&&!o.cancelled).forEach(o=>{let dt=new Date(o.date);if(dt>=start&&dt<end)tx.push({date:dt,type:'Sale',particulars:'Bill No. '+o.id,debit:Number(o.total||0),credit:0});});
  db.payments.filter(p=>p.customerId===cid).forEach(p=>{let dt=new Date(p.date);if(dt>=start&&dt<end)tx.push({date:dt,type:'Rcpt',particulars:'Payment '+(p.ref?('Ref. '+p.ref):''),debit:0,credit:Number(p.amount||0)});});
  tx.sort((a,b)=>a.date-b.date);
  let balance=opening; tx=tx.map(x=>{balance+=x.debit-x.credit;return {...x,balance}});
@@ -602,9 +960,89 @@ function printCustomerLedger(cid,month,rate,graceMonths){
 }
 function renderPayments(){document.getElementById("payments").innerHTML=head("Payments","Record and track customer collections.",`<button class="primary" onclick="openPayment()">+ Receive Payment</button>`)+`<div class="cards"><div class="card metric"><div class="label">Total Received</div><div class="value">${money(db.payments.reduce((a,p)=>a+p.amount,0))}</div></div><div class="card metric"><div class="label">Transactions</div><div class="value">${db.payments.length}</div></div></div><div class="panel" style="margin-top:18px"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody>${db.payments.slice().reverse().map(p=>`<tr><td>${new Date(p.date).toLocaleString("en-IN")}</td><td>${esc(customerName(p.customerId))}</td><td class="green"><b>${money(p.amount)}</b></td><td>${esc(p.method)}</td><td>${esc(p.ref||"-")}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No payments yet</td></tr>`}</tbody></table></div></div>`}
 function openPayment(cid=null){if(!db.customers.length){alert("Add a customer first.");return}showModal(`<div class="modalhead"><h2>Receive Payment</h2><button class="close" onclick="closeModal()">×</button></div><form id="payForm"><div class="formgrid"><div class="field"><label>Customer</label><select name="customer">${db.customers.map(c=>`<option value="${c.id}" ${cid===c.id?"selected":""}>${esc(c.name)} — Due ${money(outstanding(c))}</option>`).join("")}</select></div>${field("amount","Amount",0,"number")}<div class="field"><label>Payment Method</label><select name="method"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option><option>Other</option></select></div>${field("ref","Reference Number","")}</div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Payment</button></div></form>`);document.getElementById("payForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),a=+f.get("amount")||0;if(a<=0){alert("Enter a valid amount.");return}db.payments.push({id:id(),customerId:+f.get("customer"),amount:a,method:f.get("method"),ref:f.get("ref"),date:new Date().toISOString()});save();closeModal();renderAll();go("payments")}}
-function renderUdhaar(){document.getElementById("udhaar").innerHTML=head("Udhaar / Ledger","Customer balances and payment history.",`<button class="primary" onclick="openPayment()">+ Receive Payment</button>`)+`<div class="panel"><div class="tablewrap"><table><thead><tr><th>Customer</th><th>Total Sales Due</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody>${db.customers.map(c=>{let d=outstanding(c);return `<tr><td><b>${esc(c.name)}</b></td><td>${money(db.orders.filter(o=>o.customerId===c.id).reduce((a,o)=>a+o.total,0))}</td><td class="${d>0?'red':'green'}"><b>${money(d)}</b></td><td><span class="badge ${d>0?'red':'green'}">${d>0?'Due':'Clear'}</span></td><td><button class="smallbtn" onclick="openPayment(${c.id})">Receive Payment</button> <button class="smallbtn" onclick="showCustomerLedger(${c.id})">Ledger</button></td></tr>`}).join("")}</tbody></table></div></div>`}
+function renderUdhaar(){document.getElementById("udhaar").innerHTML=head("Udhaar / Ledger","Customer balances and payment history.",`<button class="primary" onclick="openPayment()">+ Receive Payment</button>`)+`<div class="panel"><div class="tablewrap"><table><thead><tr><th>Customer</th><th>Total Sales Due</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody>${db.customers.map(c=>{let d=outstanding(c);return `<tr><td><b>${esc(c.name)}</b></td><td>${money(db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).reduce((a,o)=>a+Number(o.total||0),0))}</td><td class="${d>0?'red':'green'}"><b>${money(d)}</b></td><td><span class="badge ${d>0?'red':'green'}">${d>0?'Due':'Clear'}</span></td><td><button class="smallbtn" onclick="openPayment(${c.id})">Receive Payment</button> <button class="smallbtn" onclick="showCustomerLedger(${c.id})">Ledger</button></td></tr>`}).join("")}</tbody></table></div></div>`}
 function renderInventory(){document.getElementById("inventory").innerHTML=head("Inventory","Live stock from products and sales.",`<button class="primary" onclick="go('products')">+ Add Stock</button>`)+`<div class="cards"><div class="card metric"><div class="label">Products</div><div class="value">${db.products.length}</div></div><div class="card metric"><div class="label">Units in Stock</div><div class="value">${db.products.reduce((a,p)=>a+p.stock,0)}</div></div><div class="card metric"><div class="label">Low Stock</div><div class="value yellow">${lowStock()}</div></div><div class="card metric"><div class="label">Out of Stock</div><div class="value red">${db.products.filter(p=>p.stock===0).length}</div></div></div><div class="panel" style="margin-top:18px"><div class="tablewrap"><table><thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Minimum</th><th>Purchase</th><th>Value</th><th>Status</th><th>Action</th></tr></thead><tbody>${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.sku)}</td><td>${p.stock} ${p.unit}</td><td>${p.min}</td><td>${money(p.purchase)}</td><td>${money(p.purchase*p.stock)}</td><td><span class="badge ${p.stock===0?'red':p.stock<=p.min?'yellow':'green'}">${p.stock===0?'Out':p.stock<=p.min?'Low':'OK'}</span></td><td><button class="smallbtn" onclick="addStock(${p.id})">+ Stock</button></td></tr>`).join("")}</tbody></table></div></div>`}
-function renderReports(){let sales=db.orders.reduce((a,o)=>a+o.total,0),paid=db.orders.reduce((a,o)=>a+o.paid,0),cost=db.orders.reduce((a,o)=>a+o.items.reduce((x,i)=>{let p=db.products.find(p=>p.id===i.productId);return x+i.qty*(p?.purchase||0)},0),0);document.getElementById("reports").innerHTML=head("Reports","Business reports calculated from your actual data.")+`<div class="cards"><div class="card metric"><div class="label">Total Sales</div><div class="value">${money(sales)}</div></div><div class="card metric"><div class="label">Collected</div><div class="value">${money(paid)}</div></div><div class="card metric"><div class="label">Estimated Cost</div><div class="value">${money(cost)}</div></div><div class="card metric"><div class="label">Gross Profit</div><div class="value green">${money(sales-cost)}</div></div></div><div class="panel" style="margin-top:18px"><h3>Top Products</h3><div class="tablewrap"><table><thead><tr><th>Product</th><th>Units Sold</th><th>Sales</th></tr></thead><tbody>${db.products.map(p=>{let items=db.orders.flatMap(o=>o.items).filter(i=>i.productId===p.id),q=items.reduce((a,i)=>a+i.qty,0),s=items.reduce((a,i)=>a+i.qty*i.price,0);return {p,q,s}}).sort((a,b)=>b.s-a.s).map(x=>`<tr><td>${esc(x.p.name)}</td><td>${x.q}</td><td>${money(x.s)}</td></tr>`).join("")||`<tr><td colspan="3" class="empty">No sales yet</td></tr>`}</tbody></table></div></div>`}
+function getReportDateRange(){
+  const from=document.getElementById("reportFromDate")?.value||"";
+  const to=document.getElementById("reportToDate")?.value||"";
+  let activeOrders=db.orders.filter(o=>!o.cancelled);
+  if(from){
+    const start=new Date(from+"T00:00:00");
+    activeOrders=activeOrders.filter(o=>new Date(o.date)>=start);
+  }
+  if(to){
+    const end=new Date(to+"T23:59:59.999");
+    activeOrders=activeOrders.filter(o=>new Date(o.date)<=end);
+  }
+  return {from,to,activeOrders};
+}
+function renderReports(){
+  const range=getReportDateRange();
+  const activeOrders=range.activeOrders;
+  const sales=activeOrders.reduce((a,o)=>a+Number(o.total||0),0);
+  const paid=activeOrders.reduce((a,o)=>a+Number(o.paid||0),0);
+  const cost=activeOrders.reduce((a,o)=>a+o.items.reduce((x,i)=>{let p=db.products.find(p=>p.id===i.productId);return x+Number(i.qty||0)*Number(p?.purchase||0)},0),0);
+  const profit=sales-cost;
+  const dailyMap={};
+  activeOrders.forEach(o=>{
+    const key=new Date(o.date).toISOString().slice(0,10);
+    if(!dailyMap[key]) dailyMap[key]={orders:0,sales:0,paid:0,cost:0};
+    dailyMap[key].orders++;
+    dailyMap[key].sales+=Number(o.total||0);
+    dailyMap[key].paid+=Number(o.paid||0);
+    dailyMap[key].cost+=o.items.reduce((x,i)=>{let p=db.products.find(p=>Number(p.id)===Number(i.productId));return x+Number(i.qty||0)*Number(p?.purchase||0)},0);
+  });
+  const dailyRows=Object.keys(dailyMap).sort().reverse().map(key=>{
+    const d=dailyMap[key];
+    return `<tr><td>${new Date(key+"T00:00:00").toLocaleDateString("en-IN")}</td><td>${d.orders}</td><td>${money(d.sales)}</td><td>${money(d.paid)}</td><td>${money(d.cost)}</td><td class="green"><b>${money(d.sales-d.cost)}</b></td></tr>`;
+  }).join("") || `<tr><td colspan="6" class="empty">Selected date range mein koi sale nahi hai</td></tr>`;
+  const rangeText=range.from||range.to
+    ? `${range.from?new Date(range.from+"T00:00:00").toLocaleDateString("en-IN"):"Start"} → ${range.to?new Date(range.to+"T00:00:00").toLocaleDateString("en-IN"):"Today"}`
+    : "All Dates";
+  document.getElementById("reports").innerHTML=
+    head("Reports","Date range ke hisaab se Sales aur Profit dekhein.",`<button class="secondary" onclick="clearReportDateRange()">Clear Dates</button>`)+
+    `<div class="panel">
+      <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap">
+        <div class="field">
+          <label>📅 From Date</label>
+          <input class="input" type="date" id="reportFromDate" value="${range.from}" onchange="renderReports()">
+        </div>
+        <div class="field">
+          <label>📅 To Date</label>
+          <input class="input" type="date" id="reportToDate" value="${range.to}" onchange="renderReports()">
+        </div>
+        <div style="padding-bottom:7px;font-weight:700;color:#4b5563">${rangeText}</div>
+      </div>
+      ${range.from&&range.to&&range.from>range.to?`<div class="empty" style="margin-top:14px">From Date, To Date se chhoti honi chahiye.</div>`:""}
+    </div>
+    <div class="cards" style="margin-top:18px">
+      <div class="card metric"><div class="label">Total Sales</div><div class="value">${money(sales)}</div><div class="muted">${activeOrders.length} active orders</div></div>
+      <div class="card metric"><div class="label">Collected</div><div class="value">${money(paid)}</div><div class="muted">Selected period</div></div>
+      <div class="card metric"><div class="label">Estimated Cost</div><div class="value">${money(cost)}</div><div class="muted">Product purchase cost</div></div>
+      <div class="card metric"><div class="label">Gross Profit</div><div class="value green">${money(profit)}</div><div class="muted">Sales − Cost</div></div>
+    </div>
+    <div class="panel" style="margin-top:18px">
+      <h3>Daily Sales & Profit</h3>
+      <p class="muted" style="margin-top:4px">Har din ki sales aur profit</p>
+      <div class="tablewrap"><table><thead><tr><th>Date</th><th>Orders</th><th>Sales</th><th>Collected</th><th>Cost</th><th>Profit</th></tr></thead><tbody>${dailyRows}</tbody></table></div>
+    </div>
+    <div class="panel" style="margin-top:18px">
+      <h3>Sales & Profit Summary</h3>
+      <p class="muted" style="margin-top:4px">${rangeText}</p>
+      <div class="tablewrap"><table><thead><tr><th>Period</th><th>Orders</th><th>Sales</th><th>Collected</th><th>Cost</th><th>Profit</th></tr></thead><tbody>
+        <tr><td>${rangeText}</td><td>${activeOrders.length}</td><td><b>${money(sales)}</b></td><td>${money(paid)}</td><td>${money(cost)}</td><td class="green"><b>${money(profit)}</b></td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="panel" style="margin-top:18px"><h3>Top Products</h3><div class="tablewrap"><table><thead><tr><th>Product</th><th>Units Sold</th><th>Sales</th></tr></thead><tbody>${db.products.map(p=>{let items=activeOrders.flatMap(o=>o.items).filter(i=>Number(i.productId)===Number(p.id)),q=items.reduce((a,i)=>a+Number(i.qty||0),0),s=items.reduce((a,i)=>a+Number(i.qty||0)*Number(i.price||0),0);return {p,q,s}}).filter(x=>x.q>0).sort((a,b)=>b.s-a.s).map(x=>`<tr><td>${esc(x.p.name)}</td><td>${x.q}</td><td>${money(x.s)}</td></tr>`).join("")||`<tr><td colspan="3" class="empty">Selected date range mein koi sale nahi hai</td></tr>`}</tbody></table></div></div>`;
+}
+function clearReportDateRange(){
+  const f=document.getElementById("reportFromDate");
+  const t=document.getElementById("reportToDate");
+  if(f)f.value="";
+  if(t)t.value="";
+  renderReports();
+}
+
 function renderSettings(){document.getElementById("settings").innerHTML=head("Settings","Business and invoice information used on printed invoices.")+`<div class="panel"><form id="settingsForm"><div class="formgrid">${field("business","Business Name",db.settings.business)}${field("mobile","Mobile",db.settings.mobile)}${field("address","Address",db.settings.address)}${field("gstin","GSTIN",db.settings.gstin)}${field("bank","Bank Name",db.settings.bank||"")}${field("account","Bank A/C Number",db.settings.account||"")}${field("ifsc","IFSC Code",db.settings.ifsc||"")}${field("upi","UPI ID",db.settings.upi||"")}<div class="field full"><label>Invoice Terms & Conditions</label><textarea name="terms" rows="4">${esc(db.settings.terms||"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment.")}</textarea></div></div><div class="modalfoot"><button class="primary">Save Settings</button></div></form></div>`;document.getElementById("settingsForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);db.settings={...db.settings,business:f.get("business"),mobile:f.get("mobile"),address:f.get("address"),gstin:f.get("gstin"),bank:f.get("bank"),account:f.get("account"),ifsc:f.get("ifsc"),upi:f.get("upi"),terms:f.get("terms")};save();alert("Settings saved")}}
 function showModal(x){document.getElementById("modal").innerHTML=x;document.getElementById("modalBg").classList.add("show")}
 function closeModal(){document.getElementById("modalBg").classList.remove("show")}
@@ -612,6 +1050,34 @@ function go(p){document.querySelectorAll(".page").forEach(x=>x.classList.remove(
 function renderPage(p){({dashboard:renderDashboard,customers:renderCustomers,products:renderProducts,purchases:renderPurchases,orders:renderOrders,invoices:renderInvoices,payments:renderPayments,udhaar:renderUdhaar,inventory:renderInventory,reports:renderReports,settings:renderSettings}[p]||renderDashboard)()}
 function safeRender(fn,name){try{fn()}catch(err){console.error(name,err);let el=document.getElementById(name);if(el)el.innerHTML=`<div class="panel"><h3>Could not load this page</h3><p class="muted">${esc(err?.message||String(err))}</p><button class="primary" onclick="location.reload()">Reload</button></div>`;}}
 function renderAll(){updatePurchasesNav();safeRender(renderDashboard,'dashboard');safeRender(renderCustomers,'customers');safeRender(renderProducts,'products');safeRender(renderPurchases,'purchases');safeRender(renderOrders,'orders');safeRender(renderInvoices,'invoices');safeRender(renderPayments,'payments');safeRender(renderUdhaar,'udhaar');safeRender(renderInventory,'inventory');safeRender(renderReports,'reports');safeRender(renderSettings,'settings')}
+
+function cancelOrderNew(orderId){
+  const order=db.orders.find(o=>String(o.id)===String(orderId));
+  if(!order){alert("Order nahi mila.");return;}
+  if(order.cancelled){alert("Ye order pehle se cancelled hai.");return;}
+  if(!confirm("Kya aap Order #"+order.id+" cancel karna chahte ho?")) return;
+
+  // Cancel hone par stock wapas add karo
+  if(Array.isArray(order.items)){
+    order.items.forEach(item=>{
+      const product=db.products.find(p=>Number(p.id)===Number(item.productId));
+      if(product){
+        product.stock=Number(product.stock||0)+Number(item.qty||0);
+      }
+    });
+  }
+
+  // Order ko cancelled mark karo
+  order.cancelled=true;
+  order.cancelledAt=new Date().toISOString();
+
+  // Local + Firebase save
+  save();
+
+  // Saare calculations/list ko refresh karo
+  renderAll();
+  go("orders");
+}
 
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
 businessDetailsForm.onsubmit=function(e){
@@ -650,6 +1116,7 @@ authFormEl.addEventListener("submit", function(e){
 
 showLogin();
 initCloud();
+
 </script>
 </body>
 </html>
