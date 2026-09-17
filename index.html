@@ -33,7 +33,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 .ref-delivery{border:1px solid #222;border-top:0;padding:10px;display:grid;grid-template-columns:1fr 1fr}.ref-delivery p{margin:4px 0;font-size:12px}
 .ref-items{width:100%;border-collapse:collapse;margin-top:0}.ref-items th{background:#b7a4ce;color:#111;border:1px solid #222;padding:8px;font-size:12px}.ref-items td{border:1px solid #222;padding:9px;font-size:12px;vertical-align:top}.ref-items .emptyspace{height:250px}
 .ref-totalbar{background:#b7a4ce;border:1px solid #222;border-top:0;padding:5px 10px;text-align:right;font-weight:700;font-size:12px}
-.ref-tax{display:grid;grid-template-columns:1fr 350px;border:1px solid #222;border-top:0}.ref-tax>div{padding:8px;border-right:1px solid #222}.ref-tax>div:last-child{border-right:0}.ref-grand{background:#b7a4ce;border:1px solid #222;border-top:0;padding:6px;text-align:right;font-weight:800}
+.ref-grand{background:#b7a4ce;border:1px solid #222;border-top:0;padding:6px;text-align:right;font-weight:800}
 .ref-footer{display:flex;justify-content:space-between;margin-top:22px;font-size:12px}.ref-sign{text-align:right;margin-top:25px}.ref-side .panel{margin-bottom:14px}.ref-side button{width:100%;margin:4px 0;text-align:left}.ref-side h4{margin:0 0 10px}.ref-option{display:block;margin:9px 0;font-size:12px}.ref-option input{accent-color:#5b3a91}
 @media(max-width:1100px){.invoice-detail-wrap{grid-template-columns:1fr}.ref-side{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ref-delivery,.ref-info{grid-template-columns:1fr}.ref-info>div{border-right:0;border-bottom:1px solid #222}.ref-tax{grid-template-columns:1fr}.ref-tax>div{border-right:0;border-bottom:1px solid #222}}
 
@@ -122,7 +122,6 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
     <div class="field"><label>Mobile Number</label><input id="setupMobile" inputmode="tel" placeholder="Enter mobile number"></div>
     <div class="field"><label>Email</label><input id="setupEmail" type="email" placeholder="Enter email"></div>
     <div class="field"><label>Business Address</label><textarea id="setupAddress" rows="3" placeholder="Enter complete business address"></textarea></div>
-    <div class="field"><label>GSTIN</label><input id="setupGstin" placeholder="Enter GSTIN (optional)"></div>
     <div class="field"><label>State</label><input id="setupState" placeholder="Enter state"></div>
     <button class="onboard-btn" type="submit">Save & Continue</button>
   </form>
@@ -173,6 +172,20 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 const KEY="aapniDukanData";
 const USER_KEY="aapniDukanUser",BUSINESS_KEY="aapniDukanBusiness";
 let currentUser=null;
+const AUTH_USERS_KEY="aapniDukanAuthUsers";
+let authUsers=JSON.parse(localStorage.getItem(AUTH_USERS_KEY)||"{}");
+function saveAuthUsers(){localStorage.setItem(AUTH_USERS_KEY,JSON.stringify(authUsers));}
+document.addEventListener("DOMContentLoaded",()=>{
+  const sf=document.getElementById("signupForm");
+  if(sf) sf.onsubmit=e=>{
+    e.preventDefault();
+    const name=document.getElementById("signupName").value.trim(), idv=document.getElementById("signupId").value.trim().toLowerCase(), pw=document.getElementById("signupPassword").value, cp=document.getElementById("signupConfirm").value;
+    if(pw.length<6){signupMessage.textContent="Password minimum 6 characters ka hona chahiye.";return;}
+    if(pw!==cp){signupMessage.textContent="Passwords match nahi kar rahe.";return;}
+    if(authUsers[idv]){signupMessage.textContent="Is email/account se account pehle se bana hua hai.";return;}
+    pendingSignup={id:idv,name,password:pw}; sendSignupOtp();
+  };
+});
 function showLogin(){
   authScreen.style.display="block"; signupScreen.style.display="none"; otpScreen.style.display="none"; businessScreen.style.display="none"; businessDetailsScreen.style.display="none";
   authMessage.textContent="";
@@ -263,49 +276,49 @@ function logoutApp(){
 }
 
 const seed={products:[
- {id:1,name:"cutter machine",sku:"HI-CM4SA",category:"tools",brand:"",purchase:1050,sell:1800,mrp:0,stock:3,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:2,name:"cutter machine",sku:"HS-725BK",category:"tools",brand:"",purchase:2250,sell:2800,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},{id:3,name:"cutter machine",sku:"xpt-412",category:"tools",brand:"",purchase:2200,sell:2800,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:4,name:"cutter machine",sku:"3-110",category:"tools",brand:"",purchase:2450,sell:3400,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:5,name:"cutter machine",sku:"MP-4SA",category:"tools",brand:"",purchase:1250,sell:1800,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:6,name:"cutter machine",sku:"CM4SB",category:"tools",brand:"",purchase:1300,sell:2100,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:1,name:"cutter machine",sku:"HI-CM4SA",category:"tools",brand:"",purchase:1050,sell:1800,mrp:0,stock:3,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:2,name:"cutter machine",sku:"HS-725BK",category:"tools",brand:"",purchase:2250,sell:2800,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},{id:3,name:"cutter machine",sku:"xpt-412",category:"tools",brand:"",purchase:2200,sell:2800,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:4,name:"cutter machine",sku:"3-110",category:"tools",brand:"",purchase:2450,sell:3400,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:5,name:"cutter machine",sku:"MP-4SA",category:"tools",brand:"",purchase:1250,sell:1800,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:6,name:"cutter machine",sku:"CM4SB",category:"tools",brand:"",purchase:1300,sell:2100,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
 
- {id:7,name:"GLANDER",sku:"3-100A",category:"tools",brand:"",purchase:1625,sell:1900,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:8,name:"GLANDER",sku:"XPT405",category:"tools",brand:"",purchase:1800,sell:2150,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:9,name:"GLANDER",sku:"XPT401",category:"tools",brand:"",purchase:1800,sell:2150,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:10,name:"GLANDER",sku:"HN-801",category:"tools",brand:"",purchase:800,sell:1200,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:11,name:"GLANDER",sku:"DWE7050S",category:"tools",brand:"",purchase:2300,sell:3100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:12,name:"GLANDER",sku:"04-100A",category:"tools",brand:"",purchase:1700,sell:2100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:13,name:"GLANDER",sku:"GWS600",category:"tools",brand:"",purchase:2000,sell:2800,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:14,name:"GLANDER",sku:"DSJ25B",category:"tools",brand:"",purchase:1600,sell:1900,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:15,name:"GLANDER",sku:"M9512B",category:"tools",brand:"",purchase:2888,sell:3300,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:16,name:"GLANDER 5'",sku:"02-125B",category:"tools",brand:"",purchase:2800,sell:3500,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:17,name:"DRILL",sku:"02-6A",category:"tools",brand:"",purchase:1475,sell:1850,mrp:0,stock:2,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:18,name:"DRILL",sku:"AJZ10A",category:"tools",brand:"",purchase:1525,sell:1750,mrp:0,stock:2,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:19,name:"DRILL",sku:"02-13",category:"tools",brand:"",purchase:1730,sell:2100,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:20,name:"DRILL",sku:"2310",category:"tools",brand:"",purchase:470,sell:900,mrp:0,stock:3,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:21,name:"DRILL",sku:"IC-024",category:"tools",brand:"",purchase:1050,sell:1200,mrp:0,stock:0,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:22,name:"DRILL YRLLOW",sku:"UNK-13RF",category:"tools",brand:"",purchase:1675,sell:2100,mrp:0,stock:0,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:7,name:"GLANDER",sku:"3-100A",category:"tools",brand:"",purchase:1625,sell:1900,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:8,name:"GLANDER",sku:"XPT405",category:"tools",brand:"",purchase:1800,sell:2150,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:9,name:"GLANDER",sku:"XPT401",category:"tools",brand:"",purchase:1800,sell:2150,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:10,name:"GLANDER",sku:"HN-801",category:"tools",brand:"",purchase:800,sell:1200,mrp:0,stock:2,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:11,name:"GLANDER",sku:"DWE7050S",category:"tools",brand:"",purchase:2300,sell:3100,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:12,name:"GLANDER",sku:"04-100A",category:"tools",brand:"",purchase:1700,sell:2100,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:13,name:"GLANDER",sku:"GWS600",category:"tools",brand:"",purchase:2000,sell:2800,mrp:0,stock:2,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:14,name:"GLANDER",sku:"DSJ25B",category:"tools",brand:"",purchase:1600,sell:1900,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:15,name:"GLANDER",sku:"M9512B",category:"tools",brand:"",purchase:2888,sell:3300,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:16,name:"GLANDER 5'",sku:"02-125B",category:"tools",brand:"",purchase:2800,sell:3500,mrp:0,stock:2,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:17,name:"DRILL",sku:"02-6A",category:"tools",brand:"",purchase:1475,sell:1850,mrp:0,stock:2,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:18,name:"DRILL",sku:"AJZ10A",category:"tools",brand:"",purchase:1525,sell:1750,mrp:0,stock:2,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:19,name:"DRILL",sku:"02-13",category:"tools",brand:"",purchase:1730,sell:2100,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:20,name:"DRILL",sku:"2310",category:"tools",brand:"",purchase:470,sell:900,mrp:0,stock:3,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:21,name:"DRILL",sku:"IC-024",category:"tools",brand:"",purchase:1050,sell:1200,mrp:0,stock:0,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:22,name:"DRILL YRLLOW",sku:"UNK-13RF",category:"tools",brand:"",purchase:1675,sell:2100,mrp:0,stock:0,min:5,unit:"pcs",size:"",color:"",supplier:""},
 
- {id:23,name:"SCREWDRIVER",sku:"XPT429",category:"tools",brand:"",purchase:1025,sell:1300,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:24,name:"JIG SAW",sku:"IC-027",category:"tools",brand:"",purchase:2000,sell:2500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:25,name:"SCREWDRIVER",sku:"08-10",category:"tools",brand:"",purchase:1850,sell:2500,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:26,name:"SCREWDRIVER",sku:"DPL8",category:"tools",brand:"",purchase:2950,sell:3500,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:27,name:"SCREWDRIVER CRODLESS",sku:"XPC-DM-02",category:"tools",brand:"",purchase:4100,sell:4500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:28,name:"SCREWDRIVER CRODLESS",sku:"XPC-IS-02",category:"tools",brand:"",purchase:2400,sell:4100,mrp:0,stock:0,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:23,name:"SCREWDRIVER",sku:"XPT429",category:"tools",brand:"",purchase:1025,sell:1300,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:24,name:"JIG SAW",sku:"IC-027",category:"tools",brand:"",purchase:2000,sell:2500,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:25,name:"SCREWDRIVER",sku:"08-10",category:"tools",brand:"",purchase:1850,sell:2500,mrp:0,stock:2,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:26,name:"SCREWDRIVER",sku:"DPL8",category:"tools",brand:"",purchase:2950,sell:3500,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:27,name:"SCREWDRIVER CRODLESS",sku:"XPC-DM-02",category:"tools",brand:"",purchase:4100,sell:4500,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:28,name:"SCREWDRIVER CRODLESS",sku:"XPC-IS-02",category:"tools",brand:"",purchase:2400,sell:4100,mrp:0,stock:0,min:0,unit:"pcs",size:"",color:"",supplier:""},
 
- {id:29,name:"2-20 HAMMER",sku:"WT 2-20",category:"tools",brand:"",purchase:1700,sell:2500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:30,name:"2-20 HAMMER",sku:"DJZ2-20",category:"tools",brand:"",purchase:3500,sell:4200,mrp:0,stock:2,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:31,name:"2-20 HAMMER",sku:"ST2-20",category:"tools",brand:"",purchase:1700,sell:2000,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:32,name:"2-26 HAMMER",sku:"HI-2-26",category:"tools",brand:"",purchase:2300,sell:3000,mrp:0,stock:2,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:33,name:"2-26 HAMMER",sku:"XPT-435",category:"tools",brand:"",purchase:3900,sell:4500,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:34,name:"3-26B",sku:"3-26B",category:"tools",brand:"",purchase:2700,sell:3500,mrp:0,stock:1,min:0,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:35,name:"DEMOLITION HAMMER",sku:"810",category:"tools",brand:"",purchase:4900,sell:6100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
- {id:36,name:"DEMOLITION HAMMER",sku:"835",category:"tools",brand:"",purchase:6000,sell:7100,mrp:0,stock:1,min:5,gst:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:29,name:"2-20 HAMMER",sku:"WT 2-20",category:"tools",brand:"",purchase:1700,sell:2500,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:30,name:"2-20 HAMMER",sku:"DJZ2-20",category:"tools",brand:"",purchase:3500,sell:4200,mrp:0,stock:2,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:31,name:"2-20 HAMMER",sku:"ST2-20",category:"tools",brand:"",purchase:1700,sell:2000,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:32,name:"2-26 HAMMER",sku:"HI-2-26",category:"tools",brand:"",purchase:2300,sell:3000,mrp:0,stock:2,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:33,name:"2-26 HAMMER",sku:"XPT-435",category:"tools",brand:"",purchase:3900,sell:4500,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:34,name:"3-26B",sku:"3-26B",category:"tools",brand:"",purchase:2700,sell:3500,mrp:0,stock:1,min:0,unit:"pcs",size:"",color:"",supplier:""},
+ {id:35,name:"DEMOLITION HAMMER",sku:"810",category:"tools",brand:"",purchase:4900,sell:6100,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
+ {id:36,name:"DEMOLITION HAMMER",sku:"835",category:"tools",brand:"",purchase:6000,sell:7100,mrp:0,stock:1,min:5,unit:"pcs",size:"",color:"",supplier:""},
 ],
 customers:[
-{id:1,name:"Ramesh Garments",shop:"Ramesh Garments",mobile:"9876543210",address:"Udaipur",gstin:"",opening:0,credit:50000,interestRate:12,interestGraceMonths:1},
-{id:2,name:"Shree Fashion",shop:"Shree Fashion",mobile:"9876500000",address:"Jaipur",gstin:"",opening:0,credit:30000,interestRate:12,interestGraceMonths:1}],
-suppliers:[],orders:[],payments:[],purchases:[],returns:[],settings:{business:"Aapni Dukan",address:"",mobile:"",gstin:"",bank:"",account:"",ifsc:"",upi:"",terms:"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment."}
+{id:1,name:"Ramesh Garments",shop:"Ramesh Garments",mobile:"9876543210",address:"Udaipur",opening:0,credit:50000,interestRate:12,interestGraceMonths:1},
+{id:2,name:"Shree Fashion",shop:"Shree Fashion",mobile:"9876500000",address:"Jaipur",opening:0,credit:30000,interestRate:12,interestGraceMonths:1}],
+suppliers:[],orders:[],payments:[],purchases:[],returns:[],settings:{business:"Aapni Dukan",address:"",mobile:"",bank:"",account:"",ifsc:"",upi:"",terms:"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment."}
 };
 const firebaseConfig = {
   apiKey: "AIzaSyAbKNJ84m1ZVw7wjXDMIIw40tVoz8kL6YA",
@@ -370,6 +383,14 @@ async function initCloud(){
       db=normalizeDb(JSON.parse(JSON.stringify(seed)));
       await CLOUD_DOC.set(db);
     }
+    // Keep old order-paid amounts visible in Payments without double counting.
+    const knownOrderPayments=new Set(db.payments.filter(p=>p.orderId!=null).map(p=>String(p.orderId)));
+    db.orders.forEach(o=>{
+      if(!o.cancelled && Number(o.paid||0)>0 && !knownOrderPayments.has(String(o.id))){
+        db.payments.push({id:id(),customerId:o.customerId,amount:Number(o.paid||0),method:"Cash",ref:"Order #"+o.id,orderId:o.id,date:o.date});
+      }
+    });
+    await CLOUD_DOC.set(db);
     localStorage.setItem(KEY,JSON.stringify(db));
     cloudReady=true;
     renderAll();
@@ -385,7 +406,7 @@ async function initCloud(){
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2})}
 function id(){return Date.now()+Math.floor(Math.random()*999)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function outstanding(c){let sale=db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).reduce((a,o)=>a+Number(o.total||0)-Number(o.paid||0),0);let pay=db.payments.filter(p=>p.customerId===c.id).reduce((a,p)=>a+Number(p.amount||0),0);return Number(c.opening||0)+sale-pay}
+function outstanding(c){let sale=db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).reduce((a,o)=>a+Number(o.total||0),0);let pay=db.payments.filter(p=>p.customerId===c.id).reduce((a,p)=>a+Number(p.amount||0),0);return Number(c.opening||0)+sale-pay}
 function todaySales(){let d=new Date().toDateString();return db.orders.filter(o=>!o.cancelled&&new Date(o.date).toDateString()===d).reduce((a,o)=>a+Number(o.total||0),0)}
 function todayOrders(){let d=new Date().toDateString();return db.orders.filter(o=>!o.cancelled&&new Date(o.date).toDateString()===d).length}
 function totalOutstanding(){return db.customers.reduce((a,c)=>a+Math.max(0,outstanding(c)),0)}
@@ -411,24 +432,26 @@ document.getElementById("products").innerHTML=head("Products","Manage your compl
 `<div class="panel"><div class="toolbar"><div class="left"><input class="input" id="psearch" placeholder="Search product, SKU..." oninput="renderProductsTable()"><select class="input" id="pfilter" onchange="renderProductsTable()"><option value="">All stock</option><option value="low">Low stock</option><option value="out">Out of stock</option></select></div><button class="secondary" onclick="openProduct()">+ Add Product</button></div><div id="ptable"></div></div>`;
 renderProductsTable()
 }
-function purchaseTotals(items){let subtotal=items.reduce((a,i)=>a+i.qty*i.rate,0),gst=items.reduce((a,i)=>a+i.qty*i.rate*i.gst/100,0);return {subtotal,gst,total:subtotal+gst}}
+function purchaseTotals(items){let subtotal=items.reduce((a,i)=>a+i.qty*i.rate,0);return {subtotal,total:subtotal}}
 function renderPurchases(){
- if(!isWholesaler()){go("dashboard");return}
- let rows=db.purchases.slice().reverse().map(p=>`<tr><td>${new Date(p.date).toLocaleDateString("en-IN")}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td><span class="badge ${p.status==='Paid'?'green':p.status==='Partial'?'yellow':'red'}">${p.status}</span></td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button></td></tr>`).join("");
- document.getElementById("purchases").innerHTML=head("Purchases","Track supplier purchases and stock inward.",`<button class="primary" onclick="openPurchase()">+ Add Purchase</button>`)+`<div class="panel"><div class="toolbar"><div class="left"><input class="input" id="purchaseSearch" placeholder="Search bill or supplier..." oninput="renderPurchasesTable()"><select class="input" id="purchaseSupplier" onchange="renderPurchasesTable()"><option value="">All suppliers</option>${[...new Set(db.purchases.map(p=>p.supplier).filter(Boolean))].map(s=>`<option>${esc(s)}</option>`).join("")}</select></div></div><div id="purchaseTable"></div></div>`;
- renderPurchasesTable();
+  if(!isWholesaler()){go("dashboard");return}
+  let rows=db.purchases.slice().reverse().map(p=>`<tr><td>${new Date(p.date).toLocaleDateString("en-IN")}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td><span class="badge ${p.status==='Paid'?'green':p.status==='Partial'?'yellow':'red'}">${p.status}</span></td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button></td></tr>`).join("");
+  document.getElementById("purchases").innerHTML=head("Purchases","Track supplier purchases and stock inward.",`<button class="primary" onclick="openPurchase()">+ Add Purchase</button>`)+`<div class="panel"><div class="toolbar"><div class="left"><input class="input" id="purchaseSearch" placeholder="Search bill or supplier..." oninput="renderPurchasesTable()"><select class="input" id="purchaseSupplier" onchange="renderPurchasesTable()"><option value="">All suppliers</option>${[...new Set(db.purchases.map(p=>p.supplier).filter(Boolean))].map(s=>`<option>${esc(s)}</option>`).join("")}</select></div></div><div id="purchaseTable"></div></div>`;
+  renderPurchasesTable();
 }
 function renderPurchasesTable(){let q=(document.getElementById("purchaseSearch")?.value||"").toLowerCase(),s=document.getElementById("purchaseSupplier")?.value||"",a=db.purchases.slice().reverse().filter(p=>(p.billNo+" "+p.supplier).toLowerCase().includes(q)&&(!s||p.supplier===s));document.getElementById("purchaseTable").innerHTML=`<div class="tablewrap"><table><thead><tr><th>Date</th><th>Bill No.</th><th>Supplier</th><th>Items</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead><tbody>${a.map(p=>`<tr><td>${new Date(p.date).toLocaleDateString("en-IN")}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td>${p.status}</td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button> <button class="danger" onclick="deletePurchase(${p.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="9" class="empty">No purchases found</td></tr>`}</tbody></table></div>`}
 function deletePurchase(pid){if(!confirm("Delete this purchase? Stock will be reversed."))return;let p=db.purchases.find(x=>x.id===pid);if(p)p.items.forEach(i=>{let x=db.products.find(x=>x.id===i.productId);if(x)x.stock=Math.max(0,(+x.stock||0)-i.qty)});db.purchases=db.purchases.filter(x=>x.id!==pid);save();renderAll();go("purchases")}
 function openPurchase(){
- if(!db.products.length){alert("Add at least one product first.");return}
- showModal(`<div class="modalhead"><h2>Add Purchase</h2><button class="close" onclick="closeModal()">×</button></div><form id="purchaseForm"><div class="formgrid">${field("supplier","Manufacturer / Supplier","", "text")}${field("billNo","Bill No.")}${field("date","Date",new Date().toISOString().slice(0,10),"date")}${field("paid","Paid Amount",0,"number")}<div class="field full"><label>Bill Photo / PDF</label><input name="attachment" type="file" accept="image/*,.pdf"></div></div><div id="purchaseItems"></div><button type="button" class="secondary" onclick="addPurchaseRow()">+ Add Product</button><div id="purchaseTotal" style="margin-top:15px;font-weight:800"></div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Purchase</button></div></form>`);
- addPurchaseRow();document.getElementById("purchaseForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),items=[...document.querySelectorAll(".purchase-row")].map(r=>({productId:+r.querySelector("select").value,qty:+r.querySelector("[name=qty]").value||0,rate:+r.querySelector("[name=rate]").value||0,gst:+r.querySelector("[name=gst]").value||0})).filter(i=>i.qty>0);if(!items.length){alert("Add at least one product and quantity.");return}let file=f.get("attachment"),finish=attachment=>{let t=purchaseTotals(items),paid=Math.min(t.total,Math.max(0,+f.get("paid")||0));items.forEach(i=>{let p=db.products.find(x=>x.id===i.productId);p.stock=(+p.stock||0)+i.qty;p.purchase=i.rate;p.gst=i.gst});db.purchases.push({id:id(),supplier:f.get("supplier"),billNo:f.get("billNo"),date:f.get("date")||new Date().toISOString(),items,total:t.total,gst:t.gst,paid,balance:t.total-paid,attachment:attachment||"",status:paid>=t.total?"Paid":paid>0?"Partial":"Credit"});save();closeModal();renderAll();go("purchases")};if(file&&file.size){let reader=new FileReader();reader.onload=()=>finish(reader.result);reader.readAsDataURL(file)}else finish("")};
+  if(!db.products.length){alert("Add at least one product first.");return}
+  showModal(`<div class="modalhead"><h2>Add Purchase</h2><button class="close" onclick="closeModal()">×</button></div><form id="purchaseForm"><div class="formgrid">${field("supplier","Manufacturer / Supplier","", "text")}${field("billNo","Bill No.")}${field("date","Date",new Date().toISOString().slice(0,10),"date")}${field("paid","Paid Amount",0,"number")}<div class="field full"><label>Bill Photo / PDF</label><input name="attachment" type="file" accept="image/*,.pdf"></div></div><div id="purchaseItems"></div><button type="button" class="secondary" onclick="addPurchaseRow()">+ Add Product</button><div id="purchaseTotal" style="margin-top:15px;font-weight:800"></div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Purchase</button></div></form>`);
+  addPurchaseRow();
+  document.getElementById("purchaseForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),items=[...document.querySelectorAll(".purchase-row")].map(r=>({productId:+r.querySelector("select").value,qty:+r.querySelector("[name=qty]").value||0,rate:+r.querySelector("[name=rate]").value||0})).filter(i=>i.qty>0);if(!items.length){alert("Add at least one product and quantity.");return}let file=f.get("attachment"),finish=attachment=>{let t=purchaseTotals(items),paid=Math.min(t.total,Math.max(0,+f.get("paid")||0));items.forEach(i=>{let p=db.products.find(x=>x.id===i.productId);if(p){p.stock=(+p.stock||0)+i.qty;p.purchase=i.rate}});db.purchases.push({id:id(),supplier:f.get("supplier"),billNo:f.get("billNo"),date:f.get("date")||new Date().toISOString(),items,total:t.total,paid,balance:t.total-paid,attachment:attachment||"",status:paid>=t.total?"Paid":paid>0?"Partial":"Credit"});save();closeModal();renderAll();go("purchases")};if(file&&file.size){let reader=new FileReader();reader.onload=()=>finish(reader.result);reader.readAsDataURL(file)}else finish("")};
 }
-function addPurchaseRow(){let box=document.getElementById("purchaseItems"),r=document.createElement("div");r.className="purchase-row formgrid";r.style.margin="14px 0";r.innerHTML=`<div class="field"><label>Product</label><select>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></div>${field("qty","Quantity",1,"number")}${field("rate","Purchase Rate",db.products[0]?.purchase||0,"number")}${field("gst","GST %",db.products[0]?.gst||0,"number")}<button type="button" class="danger" onclick="this.parentElement.remove();syncPurchaseTotal()">Remove</button>`;box.appendChild(r);r.querySelectorAll("input,select").forEach(x=>x.oninput=syncPurchaseTotal);syncPurchaseTotal()}
-function syncPurchaseTotal(){let items=[...document.querySelectorAll(".purchase-row")].map(r=>({qty:+r.querySelector("[name=qty]").value||0,rate:+r.querySelector("[name=rate]").value||0,gst:+r.querySelector("[name=gst]").value||0})),t=purchaseTotals(items);let paid=+document.querySelector('#purchaseForm [name="paid"]')?.value||0,e=document.getElementById("purchaseTotal");if(e)e.innerHTML=`Subtotal: ${money(t.subtotal)} &nbsp; GST: ${money(t.gst)} &nbsp; Grand Total: ${money(t.total)} &nbsp; Balance: ${money(Math.max(0,t.total-paid))}`}
- function viewPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Supplier Bill ${esc(p.billNo||"")}</h2><p>Supplier: ${esc(p.supplier)}<br>Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</p>${p.attachment?`<p><a href="${p.attachment}" target="_blank">Open uploaded bill</a></p>`:""}<ul>${p.items.map(i=>`<li>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")} × ${i.qty}</li>`).join("")}</ul>`);w.document.close()}
- function printPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Purchase Bill ${esc(p.billNo||"")}</h2><p>Date: ${new Date(p.date).toLocaleDateString("en-IN")}<br>Supplier: ${esc(p.supplier)}</p><table border="1" cellpadding="8"><tr><th>Product</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th></tr>${p.items.map(i=>`<tr><td>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")}</td><td>${i.qty}</td><td>${money(i.rate)}</td><td>${i.gst}%</td><td>${money(i.qty*i.rate*(1+i.gst/100))}</td></tr>`).join("")}</table><h3>Grand Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</h3><script>window.print()<\/script>`);w.document.close()}
+function addPurchaseRow(){let box=document.getElementById("purchaseItems"),r=document.createElement("div");r.className="purchase-row formgrid";r.style.margin="14px 0";r.innerHTML=`<div class="field"><label>Product</label><select>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} — ${esc(p.sku||"")}</option>`).join("")}</select></div>${field("qty","Quantity",1,"number")}${field("rate","Purchase Rate",db.products[0]?.purchase||0,"number")}<button type="button" class="danger" onclick="this.parentElement.remove();syncPurchaseTotal()">Remove</button>`;box.appendChild(r);r.querySelectorAll("input,select").forEach(x=>x.oninput=syncPurchaseTotal);syncPurchaseTotal()}
+function syncPurchaseTotal(){let items=[...document.querySelectorAll(".purchase-row")].map(r=>({qty:+r.querySelector("[name=qty]").value||0,rate:+r.querySelector("[name=rate]").value||0})),t=purchaseTotals(items),paid=+document.querySelector('#purchaseForm [name="paid"]')?.value||0,e=document.getElementById("purchaseTotal");if(e)e.innerHTML=`Total: ${money(t.total)} &nbsp; Paid: ${money(Math.min(t.total,Math.max(0,paid)))} &nbsp; Balance: ${money(Math.max(0,t.total-paid))}`}
+function viewPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Supplier Bill ${esc(p.billNo||"")}</h2><p>Supplier: ${esc(p.supplier)}<br>Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</p>${p.attachment?`<p><a href="${p.attachment}" target="_blank">Open uploaded bill</a></p>`:""}<ul>${p.items.map(i=>`<li>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")} × ${i.qty}</li>`).join("")}</ul>`);w.document.close()}
+function printPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Purchase Bill ${esc(p.billNo||"")}</h2><p>Date: ${new Date(p.date).toLocaleDateString("en-IN")}<br>Supplier: ${esc(p.supplier)}</p><table border="1" cellpadding="8"><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th></tr>${p.items.map(i=>`<tr><td>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")}</td><td>${i.qty}</td><td>${money(i.rate)}</td><td>${money(i.qty*i.rate)}</td></tr>`).join("")}</table><h3>Grand Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</h3><script>window.print()<\/script>`);w.document.close()}
+
 function renderProductsTable(){
 let q=(document.getElementById("psearch")?.value||"").toLowerCase(), f=document.getElementById("pfilter")?.value||"";
 let a=db.products.filter(p=>(p.name+" "+p.sku+" "+p.category).toLowerCase().includes(q)).filter(p=>!f||(f==="low"&&p.stock>0&&p.stock<=p.min)||(f==="out"&&p.stock===0));
@@ -442,12 +465,12 @@ ${field("name","Product Name",p.name,true)}${field("sku","SKU / Product Code",p.
 ${field("category","Category",p.category)}${field("brand","Brand",p.brand)}
 ${field("purchase","Purchase Price",p.purchase, "number")}${field("sell","Wholesale Price",p.sell,"number")}
 ${field("mrp","MRP",p.mrp,"number")}${field("stock","Stock Quantity",p.stock??0,"number")}
-${field("min","Minimum Stock",p.min??5,"number")}${field("gst","GST %",p.gst??5,"number")}
+${field("min","Minimum Stock",p.min??5,"number")}
 ${field("hsn","HSN Code",p.hsn)}${field("unit","Unit",p.unit||"pcs")}
 ${field("size","Size",p.size)}${field("color","Color",p.color)}
 <div class="field full"><label>Description</label><textarea name="description">${esc(p.description||"")}</textarea></div></div>
 <div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Product</button></div></form>`);
-document.getElementById("productForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target), obj={id:pid||id(),name:f.get("name"),sku:f.get("sku"),category:f.get("category"),brand:f.get("brand"),purchase:+f.get("purchase")||0,sell:+f.get("sell")||0,mrp:+f.get("mrp")||0,stock:+f.get("stock")||0,min:+f.get("min")||0,gst:+f.get("gst")||0,hsn:f.get("hsn"),unit:f.get("unit")||"pcs",size:f.get("size"),color:f.get("color"),description:f.get("description")}; if(pid) db.products=db.products.map(x=>x.id===pid?obj:x); else db.products.push(obj);save();closeModal();renderAll();go("products")}
+document.getElementById("productForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target), obj={id:pid||id(),name:f.get("name"),sku:f.get("sku"),category:f.get("category"),brand:f.get("brand"),purchase:+f.get("purchase")||0,sell:+f.get("sell")||0,mrp:+f.get("mrp")||0,stock:+f.get("stock")||0,min:+f.get("min")||0,hsn:f.get("hsn"),unit:f.get("unit")||"pcs",size:f.get("size"),color:f.get("color"),description:f.get("description")}; if(pid) db.products=db.products.map(x=>x.id===pid?obj:x); else db.products.push(obj);save();closeModal();renderAll();go("products")}
 }
 function field(n,l,v="",type="text"){return `<div class="field"><label>${l}</label><input name="${n}" type="${type}" value="${esc(v)}" ${l==="Product Name"?"required":""}></div>`}
 function deleteProduct(pid){if(confirm("Delete this product?")){db.products=db.products.filter(p=>p.id!==pid);save();renderAll();go("products")}}
@@ -456,7 +479,7 @@ function renderCustomers(){
 document.getElementById("customers").innerHTML=head("Customers","Manage retailers, balances and transaction history.",`<button class="primary" onclick="openCustomer()">+ Add Customer</button>`)+`<div class="panel"><div class="toolbar"><input class="input" id="csearch" placeholder="Search customer or mobile..." oninput="renderCustomersTable()"></div><div id="ctable"></div></div>`;renderCustomersTable()
 }
 function renderCustomersTable(){let q=(document.getElementById("csearch")?.value||"").toLowerCase(),a=db.customers.filter(c=>(c.name+" "+c.shop+" "+c.mobile).toLowerCase().includes(q));document.getElementById("ctable").innerHTML=`<div class="tablewrap"><table><thead><tr><th>Customer</th><th>Mobile</th><th>Total Orders</th><th>Outstanding</th><th>Actions</th></tr></thead><tbody>${a.map(c=>`<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.shop)}</span></td><td>${esc(c.mobile)}</td><td>${db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).length}</td><td class="${outstanding(c)>0?'red':'green'}"><b>${money(outstanding(c))}</b></td><td><button class="smallbtn" onclick="openCustomer(${c.id})">Edit</button> <button class="smallbtn" onclick="openPayment(${c.id})">Receive</button> <button class="smallbtn" onclick="showCustomerLedger(${c.id})">Ledger</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">No customers</td></tr>`}</tbody></table></div>`}
-function openCustomer(cid=null){let c=db.customers.find(x=>x.id===cid)||{};showModal(`<div class="modalhead"><h2>${cid?"Edit":"Add"} Customer</h2><button class="close" onclick="closeModal()">×</button></div><form id="customerForm"><div class="formgrid">${field("name","Customer Name",c.name,true)}${field("shop","Shop Name",c.shop)}${field("mobile","Mobile",c.mobile)}${field("email","Email",c.email)}${field("address","Address",c.address)}${field("gstin","GSTIN",c.gstin)}${field("opening","Opening Balance",c.opening||0,"number")}${field("credit","Credit Limit",c.credit||0,"number")}</div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Customer</button></div></form>`);document.getElementById("customerForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),old=cid?db.customers.find(x=>x.id===cid):null,o={id:cid||id(),name:f.get("name"),shop:f.get("shop")||f.get("name"),mobile:f.get("mobile"),email:f.get("email"),address:f.get("address"),gstin:f.get("gstin"),opening:+f.get("opening")||0,credit:+f.get("credit")||0,interestRate:old?.interestRate??12,interestGraceMonths:old?.interestGraceMonths??1};if(cid)db.customers=db.customers.map(x=>x.id===cid?o:x);else db.customers.push(o);save();closeModal();renderAll();go("customers")}}
+function openCustomer(cid=null){let c=db.customers.find(x=>x.id===cid)||{};showModal(`<div class="modalhead"><h2>${cid?"Edit":"Add"} Customer</h2><button class="close" onclick="closeModal()">×</button></div><form id="customerForm"><div class="formgrid">${field("name","Customer Name",c.name,true)}${field("shop","Shop Name",c.shop)}${field("mobile","Mobile",c.mobile)}${field("email","Email",c.email)}${field("address","Address",c.address)}${field("opening","Opening Balance",c.opening||0,"number")}${field("credit","Credit Limit",c.credit||0,"number")}</div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Customer</button></div></form>`);document.getElementById("customerForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),old=cid?db.customers.find(x=>x.id===cid):null,o={id:cid||id(),name:f.get("name"),shop:f.get("shop")||f.get("name"),mobile:f.get("mobile"),email:f.get("email"),address:f.get("address"),opening:+f.get("opening")||0,credit:+f.get("credit")||0,interestRate:old?.interestRate??12,interestGraceMonths:old?.interestGraceMonths??1};if(cid)db.customers=db.customers.map(x=>x.id===cid?o:x);else db.customers.push(o);save();closeModal();renderAll();go("customers")}}
 function renderOrders(){
 
   document.getElementById("orders").innerHTML =
@@ -662,163 +685,147 @@ function clearOrderDateFilter(){
 }
 
 function openOrder(){
-  if(!db.customers.length||!db.products.length){
+  if(!db.customers.length || !db.products.length){
     alert("Add at least one customer and one product first.");
     return;
   }
 
-  let products=db.products.filter(p=>Number(p.stock)>0);
+  let products = db.products.filter(p => Number(p.stock) > 0);
+  if(!products.length){ alert("Kisi bhi product mein stock available nahi hai."); return; }
 
-  const productOptions=(list,selectedId="")=>list.map(p=>
-    `<option value="${p.id}" ${String(p.id)===String(selectedId)?"selected":""}>${esc(p.name)} — ${esc(p.sku||"No SKU")}</option>`
+  const productOptions = (list, selectedId="") => list.map(p =>
+    `<option value="${p.id}" ${String(p.id)===String(selectedId) ? "selected" : ""}>${esc(p.name)} — ${esc(p.sku || "No SKU")}</option>`
   ).join("");
 
-  const row=()=>`<div class="order-product-row formgrid" style="margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;position:relative">
-    <div class="field">
-      <label>Product Search</label>
-      <input class="input product-search" type="text" placeholder="Search product name or SKU..." autocomplete="off">
-    </div>
-    <div class="field">
-      <label>Product</label>
-      <select name="product">${productOptions(products)}</select>
-    </div>
-    ${field("qty","Quantity",1,"number")}
-    ${field("price","Selling Price",products[0]?.sell||0,"number")}
-    ${field("discount","Discount",0,"number")}
-    <div class="field"><label>Amount</label><input name="amount" readonly value="0"></div>
-    <button type="button" class="secondary remove-product" style="align-self:end">Remove</button>
-  </div>`;
+  const row = () => `
+    <div class="order-product-row formgrid" style="margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;position:relative">
+      <div class="field">
+        <label>Product Search</label>
+        <input class="input product-search" type="text" placeholder="Search product name or SKU..." autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Product</label>
+        <select name="product">${productOptions(products)}</select>
+      </div>
+      ${field("qty","Quantity",1,"number")}
+      <div class="field">
+        <label>Selling Price</label>
+        <input name="price" type="number" step="1" min="0" value="${products[0]?.sell || 0}">
+      </div>
+      ${field("discount","Discount",0,"number")}
+      <div class="field">
+        <label>Amount</label>
+        <input name="amount" readonly value="0">
+      </div>
+      <button type="button" class="secondary remove-product" style="align-self:end">Remove</button>
+    </div>`;
 
-  showModal(`<div class="modalhead"><h2>Create Order</h2><button class="close" onclick="closeModal()">×</button></div>
-  <form id="orderForm">
-    <div class="formgrid">
-      <div class="field"><label>Customer</label><select name="customer" required>${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
-    </div>
-    <div id="orderProducts">${row()}</div>
-    <button type="button" class="primary" id="addProduct">+ Add Product</button>
-    ${field("paid","Paid Amount",0,"number")}
-    <div id="orderTotal" style="margin-top:15px;font-size:20px;font-weight:800"></div>
-    <div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Create Order & Invoice</button></div>
-  </form>`);
+  showModal(`
+    <div class="modalhead"><h2>Create Order</h2><button class="close" onclick="closeModal()">×</button></div>
+    <form id="orderForm">
+      <div class="formgrid">
+        <div class="field">
+          <label>Customer Search</label>
+          <input class="input" id="customerSearch" type="text" placeholder="Search customer name or mobile..." autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Customer</label>
+          <select name="customer" id="orderCustomer" required>
+            ${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.mobile || "No Mobile")}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div id="orderProducts">${row()}</div>
+      <button type="button" class="primary" id="addProduct">+ Add Product</button>
+      ${field("paid","Paid Amount",0,"number")}
+      <div class="muted" style="margin-top:6px">Paid Amount yahan dalne par ye payment Dashboard aur Payments mein bhi record hogi.</div>
+      <div id="orderTotal" style="margin-top:15px;font-size:20px;font-weight:800"></div>
+      <div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Create Order & Invoice</button></div>
+    </form>`);
 
-  let form=document.getElementById("orderForm"),box=document.getElementById("orderProducts");
+  const form=document.getElementById("orderForm");
+  const box=document.getElementById("orderProducts");
+  const customerSearch=document.getElementById("customerSearch");
+  const customerSelect=document.getElementById("orderCustomer");
+
+  customerSearch.oninput=()=>{
+    const term=customerSearch.value.trim().toLowerCase();
+    const current=customerSelect.value;
+    const filtered=db.customers.filter(c=>
+      String(c.name||"").toLowerCase().includes(term) ||
+      String(c.mobile||"").toLowerCase().includes(term) ||
+      String(c.shop||"").toLowerCase().includes(term)
+    );
+    customerSelect.innerHTML=filtered.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.mobile||"No Mobile")}</option>`).join("");
+    if(!filtered.length) customerSelect.innerHTML='<option value="">No customer found</option>';
+    else if(filtered.some(c=>String(c.id)===String(current))) customerSelect.value=current;
+  };
 
   function sync(){
     let total=0;
     box.querySelectorAll(".order-product-row").forEach(r=>{
-      let s=r.querySelector('[name=product]');
-      let p=db.products.find(x=>x.id==s.value);
-      let price=r.querySelector('[name=price]');
-      let qty=r.querySelector('[name=qty]');
-      let disc=r.querySelector('[name=discount]');
-      if(document.activeElement!==price) price.value=p?.sell||0;
-      let amount=Math.max(0,(+qty.value||0)*(+price.value||0)-(+disc.value||0));
-      r.querySelector('[name=amount]').value=amount;
-      total+=amount;
+      const s=r.querySelector('[name=product]'), p=db.products.find(x=>x.id==s.value);
+      const price=r.querySelector('[name=price]'), qty=r.querySelector('[name=qty]'), disc=r.querySelector('[name=discount]');
+      const amount=Math.max(0,(+qty.value||0)*(+price.value||0)-(+disc.value||0));
+      r.querySelector('[name=amount]').value=amount; total+=amount;
     });
     document.getElementById("orderTotal").textContent="Total: "+money(total);
   }
 
   function filterProducts(r){
-    let search=r.querySelector('.product-search');
-    let select=r.querySelector('[name=product]');
-    let term=(search.value||'').trim().toLowerCase();
-    let current=select.value;
-    let filtered=products.filter(p=>
-      !term ||
-      String(p.name||'').toLowerCase().includes(term) ||
-      String(p.sku||'').toLowerCase().includes(term)
-    );
-
+    const search=r.querySelector('.product-search'), select=r.querySelector('[name=product]');
+    const term=(search.value||'').trim().toLowerCase(), current=select.value;
+    const filtered=products.filter(p=>!term || String(p.name||'').toLowerCase().includes(term) || String(p.sku||'').toLowerCase().includes(term));
     select.innerHTML=productOptions(filtered,current);
-
-    if(!filtered.length){
-      select.innerHTML='<option value="">No product found</option>';
-    }else if(!filtered.some(p=>String(p.id)===String(current))){
-      select.value=String(filtered[0].id);
-    }
-
-    let selected=db.products.find(p=>String(p.id)===String(select.value));
-    if(selected) search.value=term;
+    if(!filtered.length) select.innerHTML='<option value="">No product found</option>';
+    else if(!filtered.some(p=>String(p.id)===String(current))) select.value=String(filtered[0].id);
     sync();
   }
 
   function bind(r){
     r.querySelector('[name=product]').onchange=()=>{
-      let p=db.products.find(x=>x.id==r.querySelector('[name=product]').value);
+      const p=db.products.find(x=>x.id==r.querySelector('[name=product]').value);
       r.querySelector('[name=price]').value=p?.sell||0;
       sync();
     };
-
     r.querySelector('.product-search').oninput=()=>filterProducts(r);
-
-    r.querySelectorAll('input,select').forEach(x=>{
-      if(!x.classList.contains('product-search')) x.oninput=sync;
-    });
-
-    r.querySelector('.remove-product').onclick=()=>{
-      if(box.children.length>1){
-        r.remove();
-        sync();
-      }
-    };
+    r.querySelectorAll('input,select').forEach(x=>{if(!x.classList.contains('product-search')) x.oninput=sync;});
+    r.querySelector('.remove-product').onclick=()=>{if(box.children.length>1){r.remove();sync();}};
   }
 
   bind(box.firstElementChild);
-
-  document.getElementById("addProduct").onclick=()=>{
-    box.insertAdjacentHTML("beforeend",row());
-    bind(box.lastElementChild);
-    sync();
-  };
-
+  document.getElementById("addProduct").onclick=()=>{box.insertAdjacentHTML("beforeend",row());bind(box.lastElementChild);sync();};
   sync();
 
   form.onsubmit=e=>{
     e.preventDefault();
-    let items=[],total=0,valid=true;
-
+    const items=[]; let total=0; let valid=true;
     box.querySelectorAll('.order-product-row').forEach(r=>{
-      let p=db.products.find(x=>x.id==r.querySelector('[name=product]').value);
-      let qty=+r.querySelector('[name=qty]').value||0;
-      let price=+r.querySelector('[name=price]').value||0;
-      let discount=+r.querySelector('[name=discount]').value||0;
-
-      if(!p||qty<=0||qty>Number(p.stock||0)) valid=false;
-
-      let amount=Math.max(0,qty*price-discount);
-      if(p) items.push({productId:p.id,name:p.name,qty,price,discount});
+      const p=db.products.find(x=>x.id==r.querySelector('[name=product]').value);
+      const qty=+r.querySelector('[name=qty]').value||0;
+      const price=+r.querySelector('[name=price]').value||0;
+      const discount=+r.querySelector('[name=discount]').value||0;
+      if(!p||qty<=0||qty>Number(p.stock||0)||price<0) valid=false;
+      const amount=Math.max(0,qty*price-discount);
+      if(p) items.push({productId:p.id,name:p.name,sku:p.sku||"",qty,price,discount});
       total+=amount;
     });
-
-    if(!valid){
-      alert("Invalid quantity or insufficient stock.");
-      return;
+    if(!valid||!items.length){alert("Invalid quantity, price or insufficient stock.");return;}
+    const paid=Math.min(total,Math.max(0,+form.paid.value||0));
+    const orderId=id();
+    const customerId=+form.customer.value;
+    db.orders.push({id:orderId,customerId,items,total,paid,date:new Date().toISOString()});
+    items.forEach(i=>{const p=db.products.find(p=>p.id===i.productId);if(p)p.stock-=i.qty;});
+    if(paid>0){
+      db.payments.push({id:id(),customerId,amount:paid,method:"Cash",ref:"Order #"+orderId,orderId,date:new Date().toISOString()});
     }
-
-    db.orders.push({
-      id:id(),
-      customerId:+form.customer.value,
-      items,
-      total,
-      paid:+form.paid.value||0,
-      date:new Date().toISOString()
-    });
-
-    items.forEach(i=>{
-      let p=db.products.find(p=>p.id===i.productId);
-      if(p) p.stock-=i.qty;
-    });
-
-    save();
-    closeModal();
-    renderAll();
-    go("orders");
+    save(); closeModal(); renderAll(); go("orders");
   };
 }
+
 function renderInvoices(){
 document.getElementById("invoices").innerHTML=head("Billing / Invoices","Invoices are created from real orders.",`<button class="primary" onclick="openOrder()">+ Create Invoice</button>`);
-let rows=db.orders.slice().reverse().map(o=>{
+let rows=db.orders.filter(o=>!o.cancelled).slice().reverse().map(o=>{
 let c=db.customers.find(x=>x.id===o.customerId)||{},due=Math.max(0,o.total-o.paid),no="INV-"+String(o.id).slice(-8);
 return `<tr class="invoice-list-row" onclick="showInvoiceDetail(${o.id})"><td>${no}</td><td><b>${esc(c.name||"Unknown")}</b><br><span class="muted">${esc(c.shop||"")}</span></td><td>${money(o.total)}</td><td>${money(o.paid)}</td><td class="${due?'red':'green'}">${money(due)}</td><td>${new Date(o.date).toLocaleDateString("en-IN")}</td><td><button class="smallbtn" onclick="event.stopPropagation();showInvoiceDetail(${o.id})">View</button></td></tr>`;
 }).join("");
@@ -826,32 +833,23 @@ document.getElementById("invoices").innerHTML+=`<div class="panel"><div class="t
 }
 
 function showInvoiceDetail(oid){
-let o=db.orders.find(x=>x.id===oid);
-if(!o){renderInvoices();return}
-let c=db.customers.find(x=>x.id===o.customerId)||{},due=Math.max(0,o.total-o.paid),sub=o.items.reduce((a,i)=>a+i.qty*i.price,0);
-let gst=o.items.reduce((a,i)=>{let p=db.products.find(p=>p.id===i.productId);return a+i.qty*i.price*(p?.gst||0)/100},0);
-let taxable=Math.max(0,o.total-gst),halfGst=gst/2,status=o.paid>=o.total?"PAID":o.paid>0?"PARTIAL":"CREDIT",no="INV-"+String(o.id).slice(-8);
-let business=esc(db.settings.business||"Aapni Dukan"),address=esc(db.settings.address||""),mobile=esc(db.settings.mobile||""),gstin=esc(db.settings.gstin||"-");
-document.getElementById("invoices").innerHTML=`<div class="pagehead"><div><button class="secondary" onclick="renderInvoices()">← Back to Invoices</button><h1 style="margin-top:14px">Invoice #${no}</h1><p>Billing / Invoices / ${no}</p></div><div class="actions"><button class="secondary" onclick="printInvoice(${o.id})">▣ Print</button><button class="secondary" onclick="printInvoice(${o.id})">↓ Download PDF</button><button class="primary" onclick="shareInvoice(${o.id})">◉ Share WhatsApp</button></div></div>
-<div class="invoice-detail-wrap"><div>
-<div class="ref-invoice">
-<div class="ref-top"><div class="ref-brand"><h1>${business}</h1><p>${address}</p><p>☎ ${mobile}</p><p><b>GSTIN:</b> ${gstin}</p></div><div class="ref-badge">Tax Invoice</div></div>
-<div class="ref-info"><div><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>GSTIN :</b> ${esc(c.gstin||"-")}</p></div><div><p><b>Date :</b> ${new Date(o.date).toLocaleDateString("en-IN")}</p><p><b>Invoice No :</b> ${no}</p><p><b>Place of Supply :</b> Rajasthan</p></div></div>
-<div class="ref-delivery"><div><p><u>Delivery Address:</u></p><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>GSTIN :</b> ${esc(c.gstin||"-")}</p></div><div><p><b>State Name :</b> Rajasthan</p><p><b>State Code :</b> 08</p></div></div>
-<table class="ref-items"><thead><tr><th style="width:7%">S.No</th><th>Description</th><th style="width:15%">HSN Code</th><th style="width:9%">Qty</th><th style="width:12%">Rate</th><th style="width:14%">Amount</th></tr></thead><tbody>${o.items.map((i,n)=>{let p=db.products.find(p=>p.id===i.productId)||{};return `<tr><td>${n+1}</td><td><b>${esc(i.name)}</b></td><td>${esc(p.hsn||"-")}</td><td>${i.qty}</td><td>${money(i.price)}</td><td>${money(i.qty*i.price)}</td></tr>`}).join("")}<tr><td colspan="6" class="emptyspace"></td></tr></tbody></table>
-<div class="ref-totalbar">Total Value <span style="margin-left:70px">${money(sub)}</span></div>
-<div class="ref-tax"><div></div><div><p><b>Add : CGST</b> (${gst?((gst*100/(taxable||1))/2).toFixed(0):0}%) <span style="float:right">${money(halfGst)}</span></p><p><b>Add : SGST</b> (${gst?((gst*100/(taxable||1))/2).toFixed(0):0}%) <span style="float:right">${money(halfGst)}</span></p></div></div>
-<div class="ref-grand">Grand Total <span style="margin-left:90px">${money(o.total)}</span></div>
-<div class="ref-footer"><div><b>Amount in Words:</b> <u>${amountWordsSimple(o.total)}</u></div><div class="ref-sign">For <b>${business}</b><br><br><br><b>Authorised Signature</b></div></div>
-</div>
-<div class="panel" style="margin-top:18px"><h3>Items Summary</h3><div class="cards" style="grid-template-columns:repeat(3,1fr)"><div class="card metric"><div class="label">Total Items</div><div class="value">${o.items.length}</div></div><div class="card metric"><div class="label">Total Quantity</div><div class="value">${o.items.reduce((a,i)=>a+i.qty,0)}</div></div><div class="card metric"><div class="label">Total Amount</div><div class="value">${money(o.total)}</div></div></div></div>
-</div>
-<div class="ref-side">
-<div class="panel"><h4>Invoice Options</h4><label class="ref-option"><input type="checkbox" checked> Show Business Address</label><label class="ref-option"><input type="checkbox" checked> Show GSTIN</label><label class="ref-option"><input type="checkbox" checked> Show Place of Supply</label><label class="ref-option"><input type="checkbox" checked> Show HSN Code</label><label class="ref-option"><input type="checkbox" checked> Show State Details</label><label class="ref-option"><input type="checkbox" checked> Show Amount in Words</label><label class="ref-option"><input type="checkbox" checked> Show Authorised Signature</label></div>
-<div class="panel"><h4>Invoice Actions</h4><button class="smallbtn" onclick="openOrder()">✎ Edit / Create Order</button><button class="smallbtn" onclick="openPayment(${c.id})">₹ Record Payment</button><button class="smallbtn" onclick="markInvoicePaid(${o.id})">✓ Mark as Paid</button><button class="smallbtn" onclick="duplicateInvoice(${o.id})">□ Duplicate Invoice</button><button class="smallbtn" style="color:#d33" onclick="cancelInvoice(${o.id})">♧ Cancel Invoice</button></div>
-<div class="panel"><h4>Payment Summary</h4><p>Paid Amount <b style="float:right">${money(o.paid)}</b></p><p>Balance Due <b style="float:right;color:${due?'#d33':'#17824b'}">${money(due)}</b></p><p>Status <b style="float:right">${status}</b></p></div>
-<div class="panel"><h4>Customer Summary</h4><p>Total Orders <b style="float:right">${db.orders.filter(x=>x.customerId===c.id).length}</b></p><p>Total Purchase <b style="float:right">${money(db.orders.filter(x=>x.customerId===c.id).reduce((a,x)=>a+x.total,0))}</b></p><p>Total Paid <b style="float:right">${money(db.orders.filter(x=>x.customerId===c.id).reduce((a,x)=>a+x.paid,0))}</b></p><p>Total Due <b style="float:right;color:#d33">${money(outstanding(c))}</b></p></div>
-</div></div>`;
+ let o=db.orders.find(x=>x.id===oid); if(!o){renderInvoices();return;}
+ let c=db.customers.find(x=>x.id===o.customerId)||{},due=Math.max(0,o.total-o.paid),sub=o.items.reduce((a,i)=>a+i.qty*i.price,0),status=o.paid>=o.total?"PAID":o.paid>0?"PARTIAL":"CREDIT",no="INV-"+String(o.id).slice(-8);
+ let business=esc(db.settings.business||"Aapni Dukan"),address=esc(db.settings.address||""),mobile=esc(db.settings.mobile||"");
+ document.getElementById("invoices").innerHTML=`<div class="pagehead"><div><button class="secondary" onclick="renderInvoices()">← Back to Invoices</button><h1 style="margin-top:14px">Invoice #${no}</h1><p>Billing / Invoices / ${no}</p></div><div class="actions"><button class="secondary" onclick="printInvoice(${o.id})">▣ Print</button><button class="secondary" onclick="printInvoice(${o.id})">↓ Download PDF</button><button class="primary" onclick="shareInvoice(${o.id})">◉ Share WhatsApp</button></div></div>
+ <div class="invoice-detail-wrap"><div><div class="ref-invoice">
+ <div class="ref-top"><div class="ref-brand"><h1>${business}</h1><p>${address}</p><p>☎ ${mobile}</p></div><div class="ref-badge">Invoice</div></div>
+ <div class="ref-info"><div><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>Mobile :</b> ${esc(c.mobile||"")}</p></div><div><p><b>Date :</b> ${new Date(o.date).toLocaleDateString("en-IN")}</p><p><b>Invoice No :</b> ${no}</p></div></div>
+ <div class="ref-delivery"><div><p><u>Delivery Address:</u></p><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>Mobile :</b> ${esc(c.mobile||"")}</p></div><div><p><b>State :</b> Rajasthan</p></div></div>
+ <table class="ref-items"><thead><tr><th style="width:7%">S.No</th><th>Description</th><th style="width:9%">Qty</th><th style="width:14%">Rate</th><th style="width:16%">Amount</th></tr></thead><tbody>${o.items.map((i,n)=>`<tr><td>${n+1}</td><td><b>${esc(i.name)}</b>${i.sku?`<br><span class="muted">${esc(i.sku)}</span>`:""}</td><td>${i.qty}</td><td>${money(i.price)}</td><td>${money(Math.max(0,i.qty*i.price-(i.discount||0)))}</td></tr>`).join("")}<tr><td colspan="5" class="emptyspace"></td></tr></tbody></table>
+ <div class="ref-totalbar">Total Value <span style="margin-left:70px">${money(o.total)}</span></div>
+ <div class="ref-grand">Grand Total <span style="margin-left:90px">${money(o.total)}</span></div>
+ <div class="ref-footer"><div><b>Amount in Words:</b> <u>${amountWordsSimple(o.total)}</u></div><div class="ref-sign">For <b>${business}</b><br><br><br><b>Authorised Signature</b></div></div>
+ </div><div class="panel" style="margin-top:18px"><h3>Items Summary</h3><div class="cards" style="grid-template-columns:repeat(3,1fr)"><div class="card metric"><div class="label">Total Items</div><div class="value">${o.items.length}</div></div><div class="card metric"><div class="label">Total Quantity</div><div class="value">${o.items.reduce((a,i)=>a+i.qty,0)}</div></div><div class="card metric"><div class="label">Total Amount</div><div class="value">${money(o.total)}</div></div></div></div></div>
+ <div class="ref-side"><div class="panel"><h4>Invoice Options</h4><label class="ref-option"><input type="checkbox" checked> Show Business Address</label><label class="ref-option"><input type="checkbox" checked> Show Customer Mobile</label><label class="ref-option"><input type="checkbox" checked> Show Amount in Words</label><label class="ref-option"><input type="checkbox" checked> Show Authorised Signature</label></div>
+ <div class="panel"><h4>Invoice Actions</h4><button class="smallbtn" onclick="openOrder()">✎ Create New Order</button><button class="smallbtn" onclick="openPayment(${c.id})">₹ Record Payment</button><button class="smallbtn" onclick="markInvoicePaid(${o.id})">✓ Mark as Paid</button><button class="smallbtn" onclick="duplicateInvoice(${o.id})">□ Duplicate Invoice</button><button class="smallbtn" style="color:#d33" onclick="cancelInvoice(${o.id})">♧ Cancel Invoice</button></div>
+ <div class="panel"><h4>Payment Summary</h4><p>Paid Amount <b style="float:right">${money(o.paid)}</b></p><p>Balance Due <b style="float:right;color:${due?'#d33':'#17824b'}">${money(due)}</b></p><p>Status <b style="float:right">${status}</b></p></div>
+ <div class="panel"><h4>Customer Summary</h4><p>Total Orders <b style="float:right">${db.orders.filter(x=>x.customerId===c.id&&!x.cancelled).length}</b></p><p>Total Purchase <b style="float:right">${money(db.orders.filter(x=>x.customerId===c.id&&!x.cancelled).reduce((a,x)=>a+x.total,0))}</b></p><p>Total Paid <b style="float:right">${money(db.payments.filter(x=>x.customerId===c.id).reduce((a,x)=>a+x.amount,0))}</b></p><p>Total Due <b style="float:right;color:#d33">${money(outstanding(c))}</b></p></div></div></div>`;
 }
 
 function markInvoicePaid(oid){
@@ -868,39 +866,12 @@ let o=db.orders.find(x=>x.id===oid); if(!o)return;
 o.cancelled=true; save(); renderAll(); go("invoices");
 }
 function amountWordsSimple(n){n=Math.round(Number(n||0));if(!n)return "Zero Rupees Only";const o=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"],t=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];function two(x){return x<20?o[x]:t[Math.floor(x/10)]+(x%10?" "+o[x%10]:"")}function three(x){return x<100?two(x):o[Math.floor(x/100)]+" Hundred"+(x%100?" "+two(x%100):"")}let r=[],cr=Math.floor(n/10000000);n%=10000000;let la=Math.floor(n/100000);n%=100000;let th=Math.floor(n/1000);n%=1000;if(cr)r.push(three(cr)+" Crore");if(la)r.push(three(la)+" Lakh");if(th)r.push(three(th)+" Thousand");if(n)r.push(three(n));return r.join(" ")+" Rupees Only";}
-function shareInvoice(oid){let o=db.orders.find(x=>x.id===oid),c=db.customers.find(x=>x.id===o.customerId);let sub=o.items.reduce((a,i)=>a+i.qty*i.price,0),tax=o.items.reduce((a,i)=>{let p=db.products.find(p=>p.id===i.productId)||{};return a+i.qty*i.price*(Number(p.gst||0)/100)},0),grand=sub+tax;window.open("https://wa.me/?text="+encodeURIComponent(`Invoice ${o.id} - ${db.settings.business}. Customer: ${c?.name||""}. Total ${money(grand)}, Paid ${money(o.paid)}, Balance ${money(Math.max(0,grand-o.paid))}`),"_blank")}
+function shareInvoice(oid){let o=db.orders.find(x=>x.id===oid),c=db.customers.find(x=>x.id===o?.customerId);if(!o||!c)return;window.open("https://wa.me/?text="+encodeURIComponent(`Invoice ${o.id} - ${db.settings.business||"Aapni Dukan"}. Customer: ${c.name||""}. Total ${money(o.total)}, Paid ${money(o.paid)}, Balance ${money(Math.max(0,o.total-o.paid))}`),"_blank")}
 function printInvoice(oid){
-let o=db.orders.find(x=>x.id===oid),c=db.customers.find(x=>x.id===o.customerId);
-if(!o||!c)return;
-let invoiceNo="INV-"+String(o.id).slice(-8).toUpperCase();
-let sub=o.items.reduce((a,i)=>a+i.qty*i.price,0);
-let discount=0;
-let taxable=Math.max(0,sub-discount);
-let gstRates=[...new Set(o.items.map(i=>Number(db.products.find(p=>p.id===i.productId)?.gst||0)))];
-let gstRate=gstRates.length===1?gstRates[0]:0;
-let tax=o.items.reduce((sum,i)=>{let p=db.products.find(p=>p.id===i.productId)||{};return sum+(i.qty*i.price*(Number(p.gst||0)/100))},0);
-let cgst=tax/2,sgst=tax/2;
-let grand=taxable+tax;
-let state=(c.state||"Rajasthan"),stateCode=(c.stateCode||"08");
-let bank=db.settings.bank||"",account=db.settings.account||"",ifsc=db.settings.ifsc||"",upi=db.settings.upi||"";
-let terms=db.settings.terms||"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment.";
-let w=window.open("","_blank");
-w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${invoiceNo}</title>
-<style>
-@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;background:#eee;margin:0;color:#111;font-size:11px}.printbar{padding:12px;text-align:center;background:#eee}.printbar button{background:#5b3a91;color:#fff;border:0;border-radius:6px;padding:9px 18px;font-weight:700;cursor:pointer}.invoice{width:190mm;min-height:277mm;margin:0 auto;background:#fff;border:1px solid #222;padding:6mm;overflow:hidden}.top{display:grid;grid-template-columns:1fr 190px;gap:15px;align-items:start;border-bottom:2px solid #333;padding-bottom:8px}.business h1{font-size:25px;margin:0 0 5px;color:#4b367c}.business p{margin:2px 0;font-size:10.5px}.taxbox{text-align:right}.taxbox .title{display:inline-block;background:#5b3a91;color:#fff;padding:8px 18px;font-size:17px;font-weight:700;border-radius:4px}.taxbox p{margin:5px 0;font-size:10.5px}.info{border:1px solid #222;border-bottom:0;margin-top:8px;display:grid;grid-template-columns:1fr 1fr}.cell{padding:7px 8px;min-height:67px;border-right:1px solid #222}.cell:last-child{border-right:0}.cell p{margin:3px 0}.label{font-weight:700;display:inline-block;min-width:85px}.delivery{border:1px solid #222;padding:7px 8px;display:grid;grid-template-columns:1fr 1fr;min-height:72px}.delivery p{margin:3px 0}.delivery .right{padding-left:12px}.items{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;word-break:normal}.items th{background:#b7a4ce;border:1px solid #222;padding:6px 3px;text-align:center;font-weight:700;font-size:10px}.items td{font-size:10px}.items td{border:1px solid #222;padding:5px 4px;vertical-align:top}.items th:nth-child(1){width:6%}.items th:nth-child(2){width:29%}.items th:nth-child(3){width:10%}.items th:nth-child(4){width:7%}.items th:nth-child(5){width:9%}.items th:nth-child(6){width:8%}.items th:nth-child(7){width:8%}.items th:nth-child(8){width:8%}.items th:nth-child(9){width:15%}.items th,.items td{overflow:hidden}.items td:nth-child(2){overflow-wrap:anywhere}.num{text-align:right;white-space:nowrap}.items-body td{height:30px}.items-body tr:first-child td{height:45px}.blank{height:190px}.subtotal{background:#b7a4ce;border:1px solid #222;border-top:0;padding:5px 8px;text-align:right;font-weight:700;white-space:nowrap;overflow:hidden}.subtotal span{display:block;width:100%}.tax-area{display:grid;grid-template-columns:minmax(0,1fr) 42%;border:1px solid #222;border-top:0;width:100%;overflow:hidden}.tax-area .empty{min-height:68px;border-right:1px solid #222}.tax-lines{padding:5px 8px;min-width:0}.tax-line span,.tax-line b{white-space:nowrap}.tax-line{display:flex;justify-content:space-between;padding:3px 0}.grand{background:#b7a4ce;border:1px solid #222;border-top:0;padding:6px 8px;display:grid;grid-template-columns:minmax(0,1fr) 95px;align-items:center;gap:8px;font-size:13px;font-weight:800;width:100%;max-width:100%;overflow:hidden}.grand span:first-child{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.grand span:last-child{white-space:nowrap;text-align:right;min-width:0;width:95px;font-variant-numeric:tabular-nums}.bottom{display:grid;grid-template-columns:1.25fr .75fr;gap:18px;margin-top:10px}.amount-words{font-weight:700;padding:5px}.terms{border:1px solid #777;padding:7px;margin-top:8px}.terms b{font-size:12px}.terms p{margin:3px 0;font-size:9.5px;line-height:1.35}.bank{margin-top:7px;font-size:9.5px;line-height:1.4}.bank b{font-size:10px}.sign{text-align:right;padding-top:55px;font-size:10px}.sign .line{margin-top:48px;border-top:1px solid #222;display:inline-block;padding-top:5px;min-width:150px}.meta{font-size:9.5px;color:#555;margin-top:6px;text-align:right}@media print{html,body{background:#fff;margin:0;padding:0;overflow-x:hidden}.printbar{display:none}.invoice{margin:0;border:1px solid #222;box-shadow:none;width:190mm;max-width:190mm;overflow:hidden}}
-</style></head><body><div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div>
-<div class="invoice">
-<div class="top"><div class="business"><h1>${esc(db.settings.business||"Aapni Dukan")}</h1><p>${esc(db.settings.address||"")}</p><p>Phone: ${esc(db.settings.mobile||"")}</p><p>GSTIN: ${esc(db.settings.gstin||"-")}</p><p>State Name: Rajasthan, State Code: 08</p></div><div class="taxbox"><div class="title">Tax Invoice</div><p><b>Invoice No:</b> ${invoiceNo}</p><p><b>Date:</b> ${new Date(o.date).toLocaleDateString("en-IN")}</p><p><b>Status:</b> ${o.paid>=grand?"PAID":o.paid>0?"PARTIAL":"CREDIT"}</p></div></div>
-<div class="info"><div class="cell"><p><span class="label">Client Name :</span> ${esc(c.name||"")}</p><p><span class="label">Address :</span> ${esc(c.address||c.shop||"")}</p><p><span class="label">GSTIN :</span> ${esc(c.gstin||"-")}</p></div><div class="cell"><p><span class="label">Invoice No :</span> ${invoiceNo}</p><p><span class="label">Date :</span> ${new Date(o.date).toLocaleDateString("en-IN")}</p><p><span class="label">Place of Supply :</span> Rajasthan (08)</p></div></div>
-<div class="delivery"><div><p><u><b>Delivery Address:</b></u></p><p>${esc(c.name||"")}</p><p>${esc(c.address||c.shop||"")}</p><p>${esc(c.mobile||"")}</p><p>GSTIN : ${esc(c.gstin||"-")}</p></div><div class="right"><p><b>State Name :</b> ${esc(state)}</p><p><b>State Code :</b> ${esc(stateCode)}</p><p><b>Payment :</b> ${o.paid>=grand?"Paid":o.paid>0?"Partial":"Credit"}</p></div></div>
-<table class="items"><thead><tr><th>S.</th><th>Product / Description</th><th>HSN</th><th>Qty</th><th>Rate</th><th>DIS</th><th>SGST</th><th>CGST</th><th>Amount</th></tr></thead><tbody class="items-body">${o.items.map((i,n)=>{let p=db.products.find(p=>p.id===i.productId)||{},line=i.qty*i.price,rate=p.gst||0,disc=0;return `<tr><td>${n+1}</td><td><b>${esc(i.name)}</b>${p.sku?`<br><small>${esc(p.sku)}</small>`:""}</td><td>${esc(p.hsn||"-")}</td><td class="num">${i.qty}</td><td class="num">${money(i.price)}</td><td class="num">${money(disc)}</td><td class="num">${rate?((rate/2).toFixed(2)+"%"):"0%"}</td><td class="num">${rate?((rate/2).toFixed(2)+"%"):"0%"}</td><td class="num">${money(line)}</td></tr>`}).join("")}${o.items.length<5?`<tr><td colspan="9" class="blank"></td></tr>`:""}</tbody></table>
-<div class="subtotal"><span>SUB TOTAL &nbsp;&nbsp; ${money(sub)}</span></div>
-<div class="tax-area"><div class="empty"></div><div class="tax-lines"><div class="tax-line"><span>Discount</span><b>${money(discount)}</b></div><div class="tax-line"><span>Taxable Amount</span><b>${money(taxable)}</b></div><div class="tax-line"><span>SGST (${(gstRate/2).toFixed(2)}%)</span><b>${money(sgst)}</b></div><div class="tax-line"><span>CGST (${(gstRate/2).toFixed(2)}%)</span><b>${money(cgst)}</b></div></div></div>
-<div class="grand"><span>GRAND TOTAL (GST INCLUDED)</span><span>${money(grand)}</span></div>
-<div class="bottom"><div><div class="amount-words">Amount in Words: <u>${amountWordsSimple(grand)}</u></div><div class="terms"><b>Terms & Conditions</b><p>${esc(terms)}</p></div>${bank||account||ifsc||upi?`<div class="bank"><b>BANK DETAILS</b><br>${bank?`Bank: ${esc(bank)}<br>`:""}${account?`A/C No.: ${esc(account)}<br>`:""}${ifsc?`IFSC Code: ${esc(ifsc)}<br>`:""}${upi?`UPI ID: ${esc(upi)}`:""}</div>`:""}</div><div class="sign"><div>For <b>${esc(db.settings.business||"Aapni Dukan")}</b></div><div class="line">Authorised Signatory</div></div></div>
-<div class="meta">Generated by Aapni Dukan • Please verify invoice details</div>
-</div></body></html>`);w.document.close();
-}
+ let o=db.orders.find(x=>x.id===oid),c=db.customers.find(x=>x.id===o?.customerId); if(!o||!c)return;
+ let invoiceNo="INV-"+String(o.id).slice(-8).toUpperCase(),w=window.open("","_blank"); if(!w){alert("Please allow pop-ups for Aapni Dukan.");return;}
+ let rows=o.items.map((i,n)=>`<tr><td>${n+1}</td><td><b>${esc(i.name)}</b>${i.sku?`<br><small>${esc(i.sku)}</small>`:""}</td><td>${i.qty}</td><td>${money(i.price)}</td><td>${money(Math.max(0,i.qty*i.price-(i.discount||0)))}</td></tr>`).join("");
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${invoiceNo}</title><style>@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#111;font-size:11px}.printbar{padding:12px;text-align:center;background:#eee}.printbar button{background:#3158d9;color:#fff;border:0;border-radius:6px;padding:9px 18px;font-weight:700}.invoice{width:190mm;min-height:277mm;margin:0 auto;background:#fff;border:1px solid #222;padding:6mm}.top{display:flex;justify-content:space-between;border-bottom:2px solid #333;padding-bottom:8px}.business h1{font-size:25px;margin:0 0 5px}.business p{margin:2px 0;font-size:10.5px}.badge{background:#3158d9;color:#fff;padding:8px 18px;font-size:17px;font-weight:700;border-radius:4px;height:max-content}.info{border:1px solid #222;border-bottom:0;margin-top:8px;display:grid;grid-template-columns:1fr 1fr}.cell{padding:8px;border-right:1px solid #222;min-height:70px}.cell:last-child{border-right:0}.cell p{margin:4px 0}.delivery{border:1px solid #222;padding:8px;display:grid;grid-template-columns:1fr 1fr;min-height:75px}.delivery p{margin:4px 0}.items{width:100%;border-collapse:collapse;margin-top:0}.items th{background:#eef2ff;border:1px solid #222;padding:7px}.items td{border:1px solid #222;padding:7px;vertical-align:top}.items th:nth-child(1){width:8%}.items th:nth-child(2){width:48%}.items th:nth-child(3){width:12%}.items th:nth-child(4){width:15%}.items th:nth-child(5){width:17%}.subtotal,.grand{border:1px solid #222;border-top:0;padding:8px;text-align:right;font-weight:800}.grand{font-size:15px;background:#eef2ff}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.terms{border:1px solid #777;padding:8px;font-size:9.5px;line-height:1.4}.sign{text-align:right;padding-top:55px}.meta{text-align:right;font-size:9px;color:#555;margin-top:10px}@media print{.printbar{display:none}.invoice{margin:0;border:1px solid #222}} </style></head><body><div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div><div class="invoice"><div class="top"><div class="business"><h1>${esc(db.settings.business||"Aapni Dukan")}</h1><p>${esc(db.settings.address||"")}</p><p>Phone: ${esc(db.settings.mobile||"")}</p></div><div><div class="badge">Invoice</div><p style="text-align:right">No: ${invoiceNo}<br>Date: ${new Date(o.date).toLocaleDateString("en-IN")}</p></div></div><div class="info"><div class="cell"><p><b>Customer:</b> ${esc(c.name||"")}</p><p><b>Shop:</b> ${esc(c.shop||"")}</p><p><b>Mobile:</b> ${esc(c.mobile||"")}</p></div><div class="cell"><p><b>Address:</b> ${esc(c.address||"")}</p><p><b>Payment:</b> ${o.paid>=o.total?"PAID":o.paid>0?"PARTIAL":"CREDIT"}</p></div></div><div class="delivery"><div><p><b>Delivery Address</b></p><p>${esc(c.name||"")}</p><p>${esc(c.address||c.shop||"")}</p><p>${esc(c.mobile||"")}</p></div><div><p><b>Order Details</b></p><p>Invoice: ${invoiceNo}</p><p>Date: ${new Date(o.date).toLocaleDateString("en-IN")}</p></div></div><table class="items"><thead><tr><th>S.</th><th>Product / Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}<tr><td colspan="5" style="height:180px"></td></tr></tbody></table><div class="subtotal">Total Value: ${money(o.total)}</div><div class="grand">GRAND TOTAL: ${money(o.total)}</div><div class="bottom"><div><p><b>Amount in Words:</b> ${amountWordsSimple(o.total)}</p><div class="terms"><b>Terms & Conditions</b><br>${esc(db.settings.terms||"Goods once sold will not be taken back or exchanged. Please verify the invoice details before payment.")}</div></div><div class="sign">For <b>${esc(db.settings.business||"Aapni Dukan")}</b><br><br><br><span style="border-top:1px solid #222;display:inline-block;padding-top:5px;min-width:150px">Authorised Signature</span></div></div><div class="meta">Paid: ${money(o.paid)} &nbsp; | &nbsp; Balance: ${money(Math.max(0,o.total-o.paid))}</div></div></body></html>`);w.document.close();setTimeout(()=>{w.focus();w.print()},300);}
 
 function customerLedgerData(cid,month){
  let c=db.customers.find(x=>x.id===cid); if(!c)return null;
@@ -1043,7 +1014,7 @@ function clearReportDateRange(){
   renderReports();
 }
 
-function renderSettings(){document.getElementById("settings").innerHTML=head("Settings","Business and invoice information used on printed invoices.")+`<div class="panel"><form id="settingsForm"><div class="formgrid">${field("business","Business Name",db.settings.business)}${field("mobile","Mobile",db.settings.mobile)}${field("address","Address",db.settings.address)}${field("gstin","GSTIN",db.settings.gstin)}${field("bank","Bank Name",db.settings.bank||"")}${field("account","Bank A/C Number",db.settings.account||"")}${field("ifsc","IFSC Code",db.settings.ifsc||"")}${field("upi","UPI ID",db.settings.upi||"")}<div class="field full"><label>Invoice Terms & Conditions</label><textarea name="terms" rows="4">${esc(db.settings.terms||"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment.")}</textarea></div></div><div class="modalfoot"><button class="primary">Save Settings</button></div></form></div>`;document.getElementById("settingsForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);db.settings={...db.settings,business:f.get("business"),mobile:f.get("mobile"),address:f.get("address"),gstin:f.get("gstin"),bank:f.get("bank"),account:f.get("account"),ifsc:f.get("ifsc"),upi:f.get("upi"),terms:f.get("terms")};save();alert("Settings saved")}}
+function renderSettings(){document.getElementById("settings").innerHTML=head("Settings","Business and invoice information used on printed invoices.")+`<div class="panel"><form id="settingsForm"><div class="formgrid">${field("business","Business Name",db.settings.business)}${field("mobile","Mobile",db.settings.mobile)}${field("address","Address",db.settings.address)}${field("bank","Bank Name",db.settings.bank||"")}${field("account","Bank A/C Number",db.settings.account||"")}${field("ifsc","IFSC Code",db.settings.ifsc||"")}${field("upi","UPI ID",db.settings.upi||"")}<div class="field full"><label>Invoice Terms & Conditions</label><textarea name="terms" rows="4">${esc(db.settings.terms||"Goods once sold will not be taken back or exchanged. All disputes subject to local jurisdiction only. E. & O.E. Please verify the invoice details before payment.")}</textarea></div></div><div class="modalfoot"><button class="primary">Save Settings</button></div></form></div>`;document.getElementById("settingsForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);db.settings={...db.settings,business:f.get("business"),mobile:f.get("mobile"),address:f.get("address"),bank:f.get("bank"),account:f.get("account"),ifsc:f.get("ifsc"),upi:f.get("upi"),terms:f.get("terms")};save();alert("Settings saved")}}
 function showModal(x){document.getElementById("modal").innerHTML=x;document.getElementById("modalBg").classList.add("show")}
 function closeModal(){document.getElementById("modalBg").classList.remove("show")}
 function go(p){document.querySelectorAll(".page").forEach(x=>x.classList.remove("show"));let el=document.getElementById(p);if(!el)return;el.classList.add("show");document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===p));try{renderPage(p)}catch(err){console.error(err);el.innerHTML=`<div class="panel"><h3>Could not load this page</h3><p class="muted">${esc(err?.message||String(err))}</p></div>`}}
@@ -1067,7 +1038,9 @@ function cancelOrderNew(orderId){
     });
   }
 
-  // Order ko cancelled mark karo
+  // Linked order payment ko bhi reverse karo, taaki cancelled sale outstanding/payment mein na rahe.
+  db.payments=db.payments.filter(p=>String(p.orderId)!==String(order.id));
+  order.paid=0;
   order.cancelled=true;
   order.cancelledAt=new Date().toISOString();
 
@@ -1099,14 +1072,20 @@ const onboardingEl = document.getElementById("onboarding");
 authFormEl.addEventListener("submit", function(e){
   e.preventDefault();
 
-  if(authPasswordEl.value === APP_PASSWORD){
+  const entered=authPasswordEl.value;
+  const savedUser=Object.values(authUsers).find(u=>u.password===entered);
+  if(entered === APP_PASSWORD || savedUser){
     authMessageEl.textContent = "";
     authPasswordEl.value = "";
-    currentUser = {id:"owner", name:"Owner"};
+    currentUser = savedUser ? {id:savedUser.id,name:savedUser.name} : {id:"owner", name:"Owner"};
     localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-    onboardingEl.classList.add("hidden");
-    renderAll();
-    go("dashboard");
+    if(localStorage.getItem(BUSINESS_KEY)){
+      onboardingEl.classList.add("hidden");
+      renderAll();
+      go("dashboard");
+    }else{
+      showBusinessChoice();
+    }
   } else {
     authMessageEl.textContent = "Wrong password. Please try again.";
     authPasswordEl.value = "";
