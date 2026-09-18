@@ -51,6 +51,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
 .otp-box{display:flex;gap:8px;justify-content:center;margin:8px 0 2px}.otp-box input{width:42px;text-align:center;font-size:20px;font-weight:800;padding:9px}.otp-actions{display:flex;gap:8px}.otp-actions button{flex:1}.demo-otp{padding:9px;background:#fff7e6;border:1px solid #f1d59a;border-radius:8px;font-size:12px;color:#805b00;margin-top:8px}
 
 .auth-divider{display:flex;align-items:center;gap:10px;color:#98a2b3;font-size:11px;margin:18px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:#e5e7eb;flex:1}
+#signupScreen,#otpScreen,#businessScreen,#businessDetailsScreen{display:none !important}
 </style>
 </head>
 <body>
@@ -258,21 +259,14 @@ function selectBusinessType(type){
 }
 function finishExistingApp(){onboarding.classList.add("hidden");renderAll();go("dashboard")}
 function logoutApp(){
-
   onboarding.classList.remove("hidden");
-
-  authScreen.style.display = "block";
-  signupScreen.style.display = "none";
-  otpScreen.style.display = "none";
-  businessScreen.style.display = "none";
-  businessDetailsScreen.style.display = "none";
-
-  authPassword.value = "";
-  authMessage.textContent = "";
-
-  setTimeout(() => {
-    authPassword.focus();
-  }, 100);
+  authScreen.style.display="block";
+  signupScreen.style.display="none";
+  otpScreen.style.display="none";
+  businessScreen.style.display="none";
+  businessDetailsScreen.style.display="none";
+  authPassword.value="";
+  authMessage.textContent="";
 }
 
 const seed={products:[
@@ -350,7 +344,7 @@ function normalizeDb(data){
   return data;
 }
 
-function isWholesaler(){return localStorage.getItem(BUSINESS_KEY)==="wholesaler"}
+function isWholesaler(){return true}
 function updatePurchasesNav(){let n=document.getElementById("purchasesNav");if(n)n.style.display=isWholesaler()?"block":"none"}
 
 function save(){
@@ -853,8 +847,13 @@ function showInvoiceDetail(oid){
 }
 
 function markInvoicePaid(oid){
-let o=db.orders.find(x=>x.id===oid); if(!o)return;
-o.paid=o.total; save(); renderAll(); go("invoices"); setTimeout(()=>showInvoiceDetail(oid),50);
+let o=db.orders.find(x=>x.id===oid); if(!o || o.cancelled)return;
+let oldPaid=Number(o.paid||0), newPaid=Number(o.total||0), delta=Math.max(0,newPaid-oldPaid);
+if(delta>0){
+  db.payments.push({id:id(),customerId:o.customerId,amount:delta,method:"Cash",ref:"Invoice #"+o.id+" - Marked Paid",orderId:o.id,date:new Date().toISOString()});
+}
+ o.paid=newPaid;
+ save(); renderAll(); go("invoices"); setTimeout(()=>showInvoiceDetail(oid),50);
 }
 function duplicateInvoice(oid){
 let o=db.orders.find(x=>x.id===oid); if(!o)return;
@@ -1071,29 +1070,27 @@ const onboardingEl = document.getElementById("onboarding");
 
 authFormEl.addEventListener("submit", function(e){
   e.preventDefault();
-
   const entered=authPasswordEl.value;
-  const savedUser=Object.values(authUsers).find(u=>u.password===entered);
-  if(entered === APP_PASSWORD || savedUser){
-    authMessageEl.textContent = "";
-    authPasswordEl.value = "";
-    currentUser = savedUser ? {id:savedUser.id,name:savedUser.name} : {id:"owner", name:"Owner"};
-    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-    if(localStorage.getItem(BUSINESS_KEY)){
-      onboardingEl.classList.add("hidden");
-      renderAll();
-      go("dashboard");
-    }else{
-      showBusinessChoice();
-    }
-  } else {
-    authMessageEl.textContent = "Wrong password. Please try again.";
-    authPasswordEl.value = "";
+  if(entered === APP_PASSWORD){
+    authMessageEl.textContent="";
+    authPasswordEl.value="";
+    currentUser={id:"owner",name:"Owner"};
+    localStorage.setItem(USER_KEY,JSON.stringify(currentUser));
+    // Password ke baad seedha existing wholesale dashboard open hoga.
+    localStorage.setItem(BUSINESS_KEY,"wholesaler");
+    updatePurchasesNav();
+    onboardingEl.classList.add("hidden");
+    renderAll();
+    go("dashboard");
+  }else{
+    authMessageEl.textContent="Wrong password. Please try again.";
+    authPasswordEl.value="";
     authPasswordEl.focus();
   }
 });
 
 showLogin();
+updatePurchasesNav();
 initCloud();
 
 </script>
