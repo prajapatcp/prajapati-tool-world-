@@ -398,11 +398,63 @@ async function initCloud(){
   }
 }
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2})}
+
+// All business dates and times in Aapni Dukan use India Standard Time.
+const APP_TIME_ZONE = "Asia/Kolkata";
+function appDateKey(value = new Date()) {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit"
+  }).format(d);
+}
+function appToday() { return appDateKey(new Date()); }
+function appDate(value) {
+  const key = appDateKey(value);
+  if (!key) return "-";
+  return new Date(key + "T12:00:00+05:30").toLocaleDateString("en-IN", { timeZone: APP_TIME_ZONE });
+}
+function appDateTime(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString("en-IN", { timeZone: APP_TIME_ZONE });
+}
+function appDateTimeToIso(value) {
+  const raw = String(value || "");
+  let date = "", time = "";
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) {
+    [date, time] = raw.split("T");
+  } else {
+    date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : appToday();
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: APP_TIME_ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+    }).formatToParts(new Date());
+    const part = type => parts.find(x => x.type === type)?.value || "00";
+    time = `${part("hour")}:${part("minute")}:${part("second")}`;
+  }
+  return new Date(`${date}T${time.length === 5 ? time + ":00" : time}+05:30`).toISOString();
+}
+function orderDateKey(order) {
+  const saved = String(order?.orderDate || "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(saved) ? saved : appDateKey(order?.date);
+}
+function appOrderDate(order) { return appDate(orderDateKey(order)); }
+function appDateTimeInput(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return `${appToday()}T12:00`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+  }).formatToParts(d);
+  const part = type => parts.find(x => x.type === type)?.value || "00";
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
+}
 function id(){return Date.now()+Math.floor(Math.random()*999)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function outstanding(c){let sale=db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).reduce((a,o)=>a+Number(o.total||0),0);let pay=db.payments.filter(p=>p.customerId===c.id).reduce((a,p)=>a+Number(p.amount||0),0);return Number(c.opening||0)+sale-pay}
-function todaySales(){let d=new Date().toDateString();return db.orders.filter(o=>!o.cancelled&&new Date(o.date).toDateString()===d).reduce((a,o)=>a+Number(o.total||0),0)}
-function todayOrders(){let d=new Date().toDateString();return db.orders.filter(o=>!o.cancelled&&new Date(o.date).toDateString()===d).length}
+function todaySales(){let d=appToday();return db.orders.filter(o=>!o.cancelled&&orderDateKey(o)===d).reduce((a,o)=>a+Number(o.total||0),0)}
+function todayOrders(){let d=appToday();return db.orders.filter(o=>!o.cancelled&&orderDateKey(o)===d).length}
 function totalOutstanding(){return db.customers.reduce((a,c)=>a+Math.max(0,outstanding(c)),0)}
 function lowStock(){return db.products.filter(p=>p.stock>0&&p.stock<=p.min).length}
 function head(title,sub,action=""){return `<div class="top"><div><h1>${title}</h1><div class="muted">${sub}</div></div><div class="actions">${action}</div></div>`}
@@ -412,11 +464,11 @@ document.getElementById("dashboard").innerHTML=head("Dashboard","Everything impo
 `<div class="cards">
 <div class="card metric"><div class="label">Today's Sales</div><div class="value">${money(todaySales())}</div><div class="green">Live data</div></div>
 <div class="card metric"><div class="label">Today's Orders</div><div class="value">${todayOrders()}</div><div class="green">Live data</div></div>
-<div class="card metric"><div class="label">Payments Received</div><div class="value">${money(db.payments.filter(p=>new Date(p.date).toDateString()===new Date().toDateString()).reduce((a,p)=>a+p.amount,0))}</div><div class="green">Collected today</div></div>
+<div class="card metric"><div class="label">Payments Received</div><div class="value">${money(db.payments.filter(p=>appDateKey(p.date)===appToday()).reduce((a,p)=>a+p.amount,0))}</div><div class="green">Collected today</div></div>
 <div class="card metric"><div class="label">Total Outstanding</div><div class="value">${money(totalOutstanding())}</div><div class="red">Customer dues</div></div>
 <div class="card metric"><div class="label">Total Products</div><div class="value">${db.products.length}</div><div class="green">Active catalogue</div></div>
 <div class="card metric"><div class="label">Low Stock Products</div><div class="value">${lowStock()}</div><div class="yellow">Needs attention</div></div></div>
-<div class="grid2"><div class="panel"><h3>Recent Orders</h3><div class="tablewrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Paid</th><th>Date</th></tr></thead><tbody>${recent.length?recent.map(o=>`<tr><td>#${o.id}</td><td><b>${esc(customerName(o.customerId))}</b></td><td>${money(o.total)}</td><td>${money(o.paid)}</td><td>${new Date(o.date).toLocaleString("en-IN")}</td></tr>`).join(""):`<tr><td colspan="5" class="empty">No orders yet</td></tr>`}</tbody></table></div></div>
+<div class="grid2"><div class="panel"><h3>Recent Orders</h3><div class="tablewrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Paid</th><th>Date</th></tr></thead><tbody>${recent.length?recent.map(o=>`<tr><td>#${o.id}</td><td><b>${esc(customerName(o.customerId))}</b></td><td>${money(o.total)}</td><td>${money(o.paid)}</td><td>${appDateTime(o.date)}</td></tr>`).join(""):`<tr><td colspan="5" class="empty">No orders yet</td></tr>`}</tbody></table></div></div>
 <div class="panel"><h3>Payment Alerts</h3>${db.customers.filter(c=>outstanding(c)>0).slice(0,5).map(c=>`<div class="alert"><b>${esc(c.name)}</b><br><span class="red">Due: ${money(outstanding(c))}</span><button class="smallbtn" style="float:right" onclick="openPayment(${c.id})">Receive</button></div>`).join("")||`<div class="empty">No outstanding payments</div>`}</div></div>
 <div class="panel" style="margin-top:18px"><h3>Low Stock</h3><div class="tablewrap"><table><thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Minimum</th><th>Status</th></tr></thead><tbody>${db.products.filter(p=>p.stock<=p.min).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.sku)}</td><td>${p.stock} ${p.unit}</td><td>${p.min}</td><td><span class="badge ${p.stock===0?'red':'yellow'}">${p.stock===0?'Out of Stock':'Low Stock'}</span></td></tr>`).join("")||`<tr><td colspan="5" class="empty">All products have sufficient stock</td></tr>`}</tbody></table></div></div>`;
 }
@@ -429,22 +481,22 @@ renderProductsTable()
 function purchaseTotals(items){let subtotal=items.reduce((a,i)=>a+i.qty*i.rate,0);return {subtotal,total:subtotal}}
 function renderPurchases(){
   if(!isWholesaler()){go("dashboard");return}
-  let rows=db.purchases.slice().reverse().map(p=>`<tr><td>${new Date(p.date).toLocaleDateString("en-IN")}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td><span class="badge ${p.status==='Paid'?'green':p.status==='Partial'?'yellow':'red'}">${p.status}</span></td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button></td></tr>`).join("");
+  let rows=db.purchases.slice().reverse().map(p=>`<tr><td>${appDate(p.date)}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td><span class="badge ${p.status==='Paid'?'green':p.status==='Partial'?'yellow':'red'}">${p.status}</span></td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button></td></tr>`).join("");
   document.getElementById("purchases").innerHTML=head("Purchases","Track supplier purchases and stock inward.",`<button class="primary" onclick="openPurchase()">+ Add Purchase</button>`)+`<div class="panel"><div class="toolbar"><div class="left"><input class="input" id="purchaseSearch" placeholder="Search bill or supplier..." oninput="renderPurchasesTable()"><select class="input" id="purchaseSupplier" onchange="renderPurchasesTable()"><option value="">All suppliers</option>${[...new Set(db.purchases.map(p=>p.supplier).filter(Boolean))].map(s=>`<option>${esc(s)}</option>`).join("")}</select></div></div><div id="purchaseTable"></div></div>`;
   renderPurchasesTable();
 }
-function renderPurchasesTable(){let q=(document.getElementById("purchaseSearch")?.value||"").toLowerCase(),s=document.getElementById("purchaseSupplier")?.value||"",a=db.purchases.slice().reverse().filter(p=>(p.billNo+" "+p.supplier).toLowerCase().includes(q)&&(!s||p.supplier===s));document.getElementById("purchaseTable").innerHTML=`<div class="tablewrap"><table><thead><tr><th>Date</th><th>Bill No.</th><th>Supplier</th><th>Items</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead><tbody>${a.map(p=>`<tr><td>${new Date(p.date).toLocaleDateString("en-IN")}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td>${p.status}</td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button> <button class="danger" onclick="deletePurchase(${p.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="9" class="empty">No purchases found</td></tr>`}</tbody></table></div>`}
+function renderPurchasesTable(){let q=(document.getElementById("purchaseSearch")?.value||"").toLowerCase(),s=document.getElementById("purchaseSupplier")?.value||"",a=db.purchases.slice().reverse().filter(p=>(p.billNo+" "+p.supplier).toLowerCase().includes(q)&&(!s||p.supplier===s));document.getElementById("purchaseTable").innerHTML=`<div class="tablewrap"><table><thead><tr><th>Date</th><th>Bill No.</th><th>Supplier</th><th>Items</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead><tbody>${a.map(p=>`<tr><td>${appDate(p.date)}</td><td>${esc(p.billNo||"-")}</td><td>${esc(p.supplier)}</td><td>${p.items.length}</td><td>${money(p.total)}</td><td>${money(p.paid)}</td><td class="${p.balance?'red':'green'}">${money(p.balance)}</td><td>${p.status}</td><td><button class="smallbtn" onclick="viewPurchase(${p.id})">View</button> <button class="smallbtn" onclick="printPurchase(${p.id})">Print</button> <button class="danger" onclick="deletePurchase(${p.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="9" class="empty">No purchases found</td></tr>`}</tbody></table></div>`}
 function deletePurchase(pid){if(!confirm("Delete this purchase? Stock will be reversed."))return;let p=db.purchases.find(x=>x.id===pid);if(p)p.items.forEach(i=>{let x=db.products.find(x=>x.id===i.productId);if(x)x.stock=Math.max(0,(+x.stock||0)-i.qty)});db.purchases=db.purchases.filter(x=>x.id!==pid);save();renderAll();go("purchases")}
 function openPurchase(){
   if(!db.products.length){alert("Add at least one product first.");return}
-  showModal(`<div class="modalhead"><h2>Add Purchase</h2><button class="close" onclick="closeModal()">×</button></div><form id="purchaseForm"><div class="formgrid">${field("supplier","Manufacturer / Supplier","", "text")}${field("billNo","Bill No.")}${field("date","Date",new Date().toISOString().slice(0,10),"date")}${field("paid","Paid Amount",0,"number")}<div class="field full"><label>Bill Photo / PDF</label><input name="attachment" type="file" accept="image/*,.pdf"></div></div><div id="purchaseItems"></div><button type="button" class="secondary" onclick="addPurchaseRow()">+ Add Product</button><div id="purchaseTotal" style="margin-top:15px;font-weight:800"></div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Purchase</button></div></form>`);
+  showModal(`<div class="modalhead"><h2>Add Purchase</h2><button class="close" onclick="closeModal()">×</button></div><form id="purchaseForm"><div class="formgrid">${field("supplier","Manufacturer / Supplier","", "text")}${field("billNo","Bill No.")}${field("date","Date",appToday(),"date")}${field("paid","Paid Amount",0,"number")}<div class="field full"><label>Bill Photo / PDF</label><input name="attachment" type="file" accept="image/*,.pdf"></div></div><div id="purchaseItems"></div><button type="button" class="secondary" onclick="addPurchaseRow()">+ Add Product</button><div id="purchaseTotal" style="margin-top:15px;font-weight:800"></div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Purchase</button></div></form>`);
   addPurchaseRow();
   document.getElementById("purchaseForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),items=[...document.querySelectorAll(".purchase-row")].map(r=>({productId:+r.querySelector("select").value,qty:+r.querySelector("[name=qty]").value||0,rate:+r.querySelector("[name=rate]").value||0})).filter(i=>i.qty>0);if(!items.length){alert("Add at least one product and quantity.");return}let file=f.get("attachment"),finish=attachment=>{let t=purchaseTotals(items),paid=Math.min(t.total,Math.max(0,+f.get("paid")||0));items.forEach(i=>{let p=db.products.find(x=>x.id===i.productId);if(p){p.stock=(+p.stock||0)+i.qty;p.purchase=i.rate}});db.purchases.push({id:id(),supplier:f.get("supplier"),billNo:f.get("billNo"),date:f.get("date")||new Date().toISOString(),items,total:t.total,paid,balance:t.total-paid,attachment:attachment||"",status:paid>=t.total?"Paid":paid>0?"Partial":"Credit"});save();closeModal();renderAll();go("purchases")};if(file&&file.size){let reader=new FileReader();reader.onload=()=>finish(reader.result);reader.readAsDataURL(file)}else finish("")};
 }
 function addPurchaseRow(){let box=document.getElementById("purchaseItems"),r=document.createElement("div");r.className="purchase-row formgrid";r.style.margin="14px 0";r.innerHTML=`<div class="field"><label>Product</label><select>${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} — ${esc(p.sku||"")}</option>`).join("")}</select></div>${field("qty","Quantity",1,"number")}${field("rate","Purchase Rate",db.products[0]?.purchase||0,"number")}<button type="button" class="danger" onclick="this.parentElement.remove();syncPurchaseTotal()">Remove</button>`;box.appendChild(r);r.querySelectorAll("input,select").forEach(x=>x.oninput=syncPurchaseTotal);syncPurchaseTotal()}
 function syncPurchaseTotal(){let items=[...document.querySelectorAll(".purchase-row")].map(r=>({qty:+r.querySelector("[name=qty]").value||0,rate:+r.querySelector("[name=rate]").value||0})),t=purchaseTotals(items),paid=+document.querySelector('#purchaseForm [name="paid"]')?.value||0,e=document.getElementById("purchaseTotal");if(e)e.innerHTML=`Total: ${money(t.total)} &nbsp; Paid: ${money(Math.min(t.total,Math.max(0,paid)))} &nbsp; Balance: ${money(Math.max(0,t.total-paid))}`}
 function viewPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Supplier Bill ${esc(p.billNo||"")}</h2><p>Supplier: ${esc(p.supplier)}<br>Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</p>${p.attachment?`<p><a href="${p.attachment}" target="_blank">Open uploaded bill</a></p>`:""}<ul>${p.items.map(i=>`<li>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")} × ${i.qty}</li>`).join("")}</ul>`);w.document.close()}
-function printPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Purchase Bill ${esc(p.billNo||"")}</h2><p>Date: ${new Date(p.date).toLocaleDateString("en-IN")}<br>Supplier: ${esc(p.supplier)}</p><table border="1" cellpadding="8"><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th></tr>${p.items.map(i=>`<tr><td>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")}</td><td>${i.qty}</td><td>${money(i.rate)}</td><td>${money(i.qty*i.rate)}</td></tr>`).join("")}</table><h3>Grand Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</h3><script>window.print()<\/script>`);w.document.close()}
+function printPurchase(pid){let p=db.purchases.find(x=>x.id===pid);if(!p)return;let w=window.open("","_blank");w.document.write(`<h2>Purchase Bill ${esc(p.billNo||"")}</h2><p>Date: ${appDate(p.date)}<br>Supplier: ${esc(p.supplier)}</p><table border="1" cellpadding="8"><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th></tr>${p.items.map(i=>`<tr><td>${esc(db.products.find(x=>x.id===i.productId)?.name||"Product")}</td><td>${i.qty}</td><td>${money(i.rate)}</td><td>${money(i.qty*i.rate)}</td></tr>`).join("")}</table><h3>Grand Total: ${money(p.total)} | Paid: ${money(p.paid)} | Balance: ${money(p.balance)}</h3><script>window.print()<\/script>`);w.document.close()}
 
 function renderProductsTable(){
 let q=(document.getElementById("psearch")?.value||"").toLowerCase(), f=document.getElementById("pfilter")?.value||"";
@@ -526,13 +578,7 @@ function showOrdersByDate(){
 
     orders = orders.filter(o => {
 
-      const d = new Date(o.date);
-
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-
-      return `${year}-${month}-${day}` === selectedDate;
+      return orderDateKey(o) === selectedDate;
     });
 
   }
@@ -555,8 +601,7 @@ function showOrdersByDate(){
 
       <h3>
         ${selectedDate
-          ? "📅 " + new Date(selectedDate + "T00:00:00")
-              .toLocaleDateString("en-IN")
+          ? "📅 " + appDate(selectedDate)
           : "📋 Sabhi Orders"}
       </h3>
 
@@ -646,9 +691,10 @@ function showOrdersByDate(){
                 </td>
 
                 <td>
-                  ${new Date(o.date).toLocaleString("en-IN")}
+                  ${appDateTime(o.date)}
                 </td>
                 <td>
+                  <button class="smallbtn" onclick="editOrderDateTime(${o.id})">Edit Date/Time</button>
                   ${o.cancelled
                     ? `<button class="danger" disabled style="opacity:.6;cursor:not-allowed">Cancelled</button>`
                     : `<button class="danger" onclick="cancelOrderNew(${o.id})">Cancel Order</button>`}
@@ -676,6 +722,26 @@ function clearOrderDateFilter(){
   }
 
   showOrdersByDate();
+}
+
+function editOrderDateTime(orderId){
+  const order=db.orders.find(o=>Number(o.id)===Number(orderId));
+  if(!order)return;
+  const currentValue=appDateTimeInput(order.date);
+  showModal(`<div class="modalhead"><h2>Correct Order Date / Time</h2><button class="close" onclick="closeModal()">×</button></div>
+    <p class="muted">Purani entry ka date/time laptop ki galat clock ke karan galat ho sakta hai. Yahan asli order date aur time set karein. Isse Orders, Reports aur Invoice date update honge.</p>
+    <form id="orderDateFixForm">
+      <div class="field"><label>Correct Order Date & Time (India)</label><input class="input" style="width:100%" type="datetime-local" name="correctedDateTime" value="${currentValue}" required></div>
+      <div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Correct Date/Time</button></div>
+    </form>`);
+  document.getElementById("orderDateFixForm").onsubmit=e=>{
+    e.preventDefault();
+    const value=e.target.elements.correctedDateTime.value;
+    if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)){alert("Valid date aur time select karein.");return;}
+    order.date=appDateTimeToIso(value);
+    order.orderDate=value.slice(0,10);
+    save();closeModal();renderAll();go("orders");
+  };
 }
 
 function openOrder(){
@@ -727,6 +793,10 @@ function openOrder(){
           <select name="customer" id="orderCustomer" required>
             ${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.mobile || "No Mobile")}</option>`).join("")}
           </select>
+        </div>
+        <div class="field">
+          <label>📅 Order Date</label>
+          <input class="input" type="date" name="orderDate" value="${appToday()}" required>
         </div>
       </div>
       <div id="orderProducts">${row()}</div>
@@ -808,7 +878,9 @@ function openOrder(){
     const paid=Math.min(total,Math.max(0,+form.paid.value||0));
     const orderId=id();
     const customerId=+form.customer.value;
-    db.orders.push({id:orderId,customerId,items,total,paid,date:new Date().toISOString()});
+    const orderDate=form.elements.orderDate.value || appToday();
+    const orderTimestamp=appDateTimeToIso(orderDate);
+    db.orders.push({id:orderId,customerId,items,total,paid,date:orderTimestamp,orderDate});
     items.forEach(i=>{const p=db.products.find(p=>p.id===i.productId);if(p)p.stock-=i.qty;});
     if(paid>0){
       db.payments.push({id:id(),customerId,amount:paid,method:"Cash",ref:"Order #"+orderId,orderId,date:new Date().toISOString()});
@@ -821,7 +893,7 @@ function renderInvoices(){
 document.getElementById("invoices").innerHTML=head("Billing / Invoices","Invoices are created from real orders.",`<button class="primary" onclick="openOrder()">+ Create Invoice</button>`);
 let rows=db.orders.filter(o=>!o.cancelled).slice().reverse().map(o=>{
 let c=db.customers.find(x=>x.id===o.customerId)||{},due=Math.max(0,o.total-o.paid),no="INV-"+String(o.id).slice(-8);
-return `<tr class="invoice-list-row" onclick="showInvoiceDetail(${o.id})"><td>${no}</td><td><b>${esc(c.name||"Unknown")}</b><br><span class="muted">${esc(c.shop||"")}</span></td><td>${money(o.total)}</td><td>${money(o.paid)}</td><td class="${due?'red':'green'}">${money(due)}</td><td>${new Date(o.date).toLocaleDateString("en-IN")}</td><td><button class="smallbtn" onclick="event.stopPropagation();showInvoiceDetail(${o.id})">View</button></td></tr>`;
+return `<tr class="invoice-list-row" onclick="showInvoiceDetail(${o.id})"><td>${no}</td><td><b>${esc(c.name||"Unknown")}</b><br><span class="muted">${esc(c.shop||"")}</span></td><td>${money(o.total)}</td><td>${money(o.paid)}</td><td class="${due?'red':'green'}">${money(due)}</td><td>${appOrderDate(o)}</td><td><button class="smallbtn" onclick="event.stopPropagation();showInvoiceDetail(${o.id})">View</button></td></tr>`;
 }).join("");
 document.getElementById("invoices").innerHTML+=`<div class="panel"><div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Paid</th><th>Due</th><th>Date</th><th>Action</th></tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">No invoices yet. Click Create Invoice.</td></tr>`}</tbody></table></div></div>`;
 }
@@ -833,7 +905,7 @@ function showInvoiceDetail(oid){
  document.getElementById("invoices").innerHTML=`<div class="pagehead"><div><button class="secondary" onclick="renderInvoices()">← Back to Invoices</button><h1 style="margin-top:14px">Invoice #${no}</h1><p>Billing / Invoices / ${no}</p></div><div class="actions"><button class="secondary" onclick="printInvoice(${o.id})">▣ Print</button><button class="secondary" onclick="printInvoice(${o.id})">↓ Download PDF</button><button class="primary" onclick="shareInvoice(${o.id})">◉ Share WhatsApp</button></div></div>
  <div class="invoice-detail-wrap"><div><div class="ref-invoice">
  <div class="ref-top"><div class="ref-brand"><h1>${business}</h1><p>${address}</p><p>☎ ${mobile}</p></div><div class="ref-badge">Invoice</div></div>
- <div class="ref-info"><div><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>Mobile :</b> ${esc(c.mobile||"")}</p></div><div><p><b>Date :</b> ${new Date(o.date).toLocaleDateString("en-IN")}</p><p><b>Invoice No :</b> ${no}</p></div></div>
+ <div class="ref-info"><div><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>Mobile :</b> ${esc(c.mobile||"")}</p></div><div><p><b>Date :</b> ${appOrderDate(o)}</p><p><b>Invoice No :</b> ${no}</p></div></div>
  <div class="ref-delivery"><div><p><u>Delivery Address:</u></p><p><b>Client Name :</b> ${esc(c.name||"")}</p><p><b>Address :</b> ${esc(c.address||c.shop||"")}</p><p><b>Mobile :</b> ${esc(c.mobile||"")}</p></div><div><p><b>State :</b> Rajasthan</p></div></div>
  <table class="ref-items"><thead><tr><th style="width:7%">S.No</th><th>Description</th><th style="width:9%">Qty</th><th style="width:14%">Rate</th><th style="width:16%">Amount</th></tr></thead><tbody>${o.items.map((i,n)=>`<tr><td>${n+1}</td><td><b>${esc(i.name)}</b>${i.sku?`<br><span class="muted">${esc(i.sku)}</span>`:""}</td><td>${i.qty}</td><td>${money(i.price)}</td><td>${money(Math.max(0,i.qty*i.price-(i.discount||0)))}</td></tr>`).join("")}<tr><td colspan="5" class="emptyspace"></td></tr></tbody></table>
  <div class="ref-totalbar">Total Value <span style="margin-left:70px">${money(o.total)}</span></div>
@@ -857,7 +929,7 @@ if(delta>0){
 }
 function duplicateInvoice(oid){
 let o=db.orders.find(x=>x.id===oid); if(!o)return;
-db.orders.push({...o,id:id(),date:new Date().toISOString(),paid:0,items:o.items.map(i=>({...i}))}); save(); renderAll(); go("invoices");
+db.orders.push({...o,id:id(),date:appDateTimeToIso(appToday()),orderDate:appToday(),paid:0,items:o.items.map(i=>({...i}))}); save(); renderAll(); go("invoices");
 }
 function cancelInvoice(oid){
 if(!confirm("Cancel this invoice?"))return;
@@ -870,16 +942,16 @@ function printInvoice(oid){
  let o=db.orders.find(x=>x.id===oid),c=db.customers.find(x=>x.id===o?.customerId); if(!o||!c)return;
  let invoiceNo="INV-"+String(o.id).slice(-8).toUpperCase(),w=window.open("","_blank"); if(!w){alert("Please allow pop-ups for Aapni Dukan.");return;}
  let rows=o.items.map((i,n)=>`<tr><td>${n+1}</td><td><b>${esc(i.name)}</b>${i.sku?`<br><small>${esc(i.sku)}</small>`:""}</td><td>${i.qty}</td><td>${money(i.price)}</td><td>${money(Math.max(0,i.qty*i.price-(i.discount||0)))}</td></tr>`).join("");
- w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${invoiceNo}</title><style>@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#111;font-size:11px}.printbar{padding:12px;text-align:center;background:#eee}.printbar button{background:#3158d9;color:#fff;border:0;border-radius:6px;padding:9px 18px;font-weight:700}.invoice{width:190mm;min-height:277mm;margin:0 auto;background:#fff;border:1px solid #222;padding:6mm}.top{display:flex;justify-content:space-between;border-bottom:2px solid #333;padding-bottom:8px}.business h1{font-size:25px;margin:0 0 5px}.business p{margin:2px 0;font-size:10.5px}.badge{background:#3158d9;color:#fff;padding:8px 18px;font-size:17px;font-weight:700;border-radius:4px;height:max-content}.info{border:1px solid #222;border-bottom:0;margin-top:8px;display:grid;grid-template-columns:1fr 1fr}.cell{padding:8px;border-right:1px solid #222;min-height:70px}.cell:last-child{border-right:0}.cell p{margin:4px 0}.delivery{border:1px solid #222;padding:8px;display:grid;grid-template-columns:1fr 1fr;min-height:75px}.delivery p{margin:4px 0}.items{width:100%;border-collapse:collapse;margin-top:0}.items th{background:#eef2ff;border:1px solid #222;padding:7px}.items td{border:1px solid #222;padding:7px;vertical-align:top}.items th:nth-child(1){width:8%}.items th:nth-child(2){width:48%}.items th:nth-child(3){width:12%}.items th:nth-child(4){width:15%}.items th:nth-child(5){width:17%}.subtotal,.grand{border:1px solid #222;border-top:0;padding:8px;text-align:right;font-weight:800}.grand{font-size:15px;background:#eef2ff}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.terms{border:1px solid #777;padding:8px;font-size:9.5px;line-height:1.4}.sign{text-align:right;padding-top:55px}.meta{text-align:right;font-size:9px;color:#555;margin-top:10px}@media print{.printbar{display:none}.invoice{margin:0;border:1px solid #222}} </style></head><body><div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div><div class="invoice"><div class="top"><div class="business"><h1>${esc(db.settings.business||"Aapni Dukan")}</h1><p>${esc(db.settings.address||"")}</p><p>Phone: ${esc(db.settings.mobile||"")}</p></div><div><div class="badge">Invoice</div><p style="text-align:right">No: ${invoiceNo}<br>Date: ${new Date(o.date).toLocaleDateString("en-IN")}</p></div></div><div class="info"><div class="cell"><p><b>Customer:</b> ${esc(c.name||"")}</p><p><b>Shop:</b> ${esc(c.shop||"")}</p><p><b>Mobile:</b> ${esc(c.mobile||"")}</p></div><div class="cell"><p><b>Address:</b> ${esc(c.address||"")}</p><p><b>Payment:</b> ${o.paid>=o.total?"PAID":o.paid>0?"PARTIAL":"CREDIT"}</p></div></div><div class="delivery"><div><p><b>Delivery Address</b></p><p>${esc(c.name||"")}</p><p>${esc(c.address||c.shop||"")}</p><p>${esc(c.mobile||"")}</p></div><div><p><b>Order Details</b></p><p>Invoice: ${invoiceNo}</p><p>Date: ${new Date(o.date).toLocaleDateString("en-IN")}</p></div></div><table class="items"><thead><tr><th>S.</th><th>Product / Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}<tr><td colspan="5" style="height:180px"></td></tr></tbody></table><div class="subtotal">Total Value: ${money(o.total)}</div><div class="grand">GRAND TOTAL: ${money(o.total)}</div><div class="bottom"><div><p><b>Amount in Words:</b> ${amountWordsSimple(o.total)}</p><div class="terms"><b>Terms & Conditions</b><br>${esc(db.settings.terms||"Goods once sold will not be taken back or exchanged. Please verify the invoice details before payment.")}</div></div><div class="sign">For <b>${esc(db.settings.business||"Aapni Dukan")}</b><br><br><br><span style="border-top:1px solid #222;display:inline-block;padding-top:5px;min-width:150px">Authorised Signature</span></div></div><div class="meta">Paid: ${money(o.paid)} &nbsp; | &nbsp; Balance: ${money(Math.max(0,o.total-o.paid))}</div></div></body></html>`);w.document.close();setTimeout(()=>{w.focus();w.print()},300);}
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${invoiceNo}</title><style>@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#111;font-size:11px}.printbar{padding:12px;text-align:center;background:#eee}.printbar button{background:#3158d9;color:#fff;border:0;border-radius:6px;padding:9px 18px;font-weight:700}.invoice{width:190mm;min-height:277mm;margin:0 auto;background:#fff;border:1px solid #222;padding:6mm}.top{display:flex;justify-content:space-between;border-bottom:2px solid #333;padding-bottom:8px}.business h1{font-size:25px;margin:0 0 5px}.business p{margin:2px 0;font-size:10.5px}.badge{background:#3158d9;color:#fff;padding:8px 18px;font-size:17px;font-weight:700;border-radius:4px;height:max-content}.info{border:1px solid #222;border-bottom:0;margin-top:8px;display:grid;grid-template-columns:1fr 1fr}.cell{padding:8px;border-right:1px solid #222;min-height:70px}.cell:last-child{border-right:0}.cell p{margin:4px 0}.delivery{border:1px solid #222;padding:8px;display:grid;grid-template-columns:1fr 1fr;min-height:75px}.delivery p{margin:4px 0}.items{width:100%;border-collapse:collapse;margin-top:0}.items th{background:#eef2ff;border:1px solid #222;padding:7px}.items td{border:1px solid #222;padding:7px;vertical-align:top}.items th:nth-child(1){width:8%}.items th:nth-child(2){width:48%}.items th:nth-child(3){width:12%}.items th:nth-child(4){width:15%}.items th:nth-child(5){width:17%}.subtotal,.grand{border:1px solid #222;border-top:0;padding:8px;text-align:right;font-weight:800}.grand{font-size:15px;background:#eef2ff}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.terms{border:1px solid #777;padding:8px;font-size:9.5px;line-height:1.4}.sign{text-align:right;padding-top:55px}.meta{text-align:right;font-size:9px;color:#555;margin-top:10px}@media print{.printbar{display:none}.invoice{margin:0;border:1px solid #222}} </style></head><body><div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div><div class="invoice"><div class="top"><div class="business"><h1>${esc(db.settings.business||"Aapni Dukan")}</h1><p>${esc(db.settings.address||"")}</p><p>Phone: ${esc(db.settings.mobile||"")}</p></div><div><div class="badge">Invoice</div><p style="text-align:right">No: ${invoiceNo}<br>Date: ${appOrderDate(o)}</p></div></div><div class="info"><div class="cell"><p><b>Customer:</b> ${esc(c.name||"")}</p><p><b>Shop:</b> ${esc(c.shop||"")}</p><p><b>Mobile:</b> ${esc(c.mobile||"")}</p></div><div class="cell"><p><b>Address:</b> ${esc(c.address||"")}</p><p><b>Payment:</b> ${o.paid>=o.total?"PAID":o.paid>0?"PARTIAL":"CREDIT"}</p></div></div><div class="delivery"><div><p><b>Delivery Address</b></p><p>${esc(c.name||"")}</p><p>${esc(c.address||c.shop||"")}</p><p>${esc(c.mobile||"")}</p></div><div><p><b>Order Details</b></p><p>Invoice: ${invoiceNo}</p><p>Date: ${appOrderDate(o)}</p></div></div><table class="items"><thead><tr><th>S.</th><th>Product / Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}<tr><td colspan="5" style="height:180px"></td></tr></tbody></table><div class="subtotal">Total Value: ${money(o.total)}</div><div class="grand">GRAND TOTAL: ${money(o.total)}</div><div class="bottom"><div><p><b>Amount in Words:</b> ${amountWordsSimple(o.total)}</p><div class="terms"><b>Terms & Conditions</b><br>${esc(db.settings.terms||"Goods once sold will not be taken back or exchanged. Please verify the invoice details before payment.")}</div></div><div class="sign">For <b>${esc(db.settings.business||"Aapni Dukan")}</b><br><br><br><span style="border-top:1px solid #222;display:inline-block;padding-top:5px;min-width:150px">Authorised Signature</span></div></div><div class="meta">Paid: ${money(o.paid)} &nbsp; | &nbsp; Balance: ${money(Math.max(0,o.total-o.paid))}</div></div></body></html>`);w.document.close();setTimeout(()=>{w.focus();w.print()},300);}
 
 function customerLedgerData(cid,month){
  let c=db.customers.find(x=>x.id===cid); if(!c)return null;
  let [y,m]=month.split('-').map(Number),start=new Date(y,m-1,1),end=new Date(y,m,1);
  let opening=Number(c.opening||0);
- db.orders.filter(o=>o.customerId===cid&&!o.cancelled&&new Date(o.date)<start).forEach(o=>opening+=Number(o.total||0));
+ db.orders.filter(o=>o.customerId===cid&&!o.cancelled&&new Date(orderDateKey(o)+"T00:00:00+05:30")<start).forEach(o=>opening+=Number(o.total||0));
  db.payments.filter(p=>p.customerId===cid&&new Date(p.date)<start).forEach(p=>opening-=Number(p.amount||0));
  let tx=[];
- db.orders.filter(o=>o.customerId===cid&&!o.cancelled).forEach(o=>{let dt=new Date(o.date);if(dt>=start&&dt<end)tx.push({date:dt,type:'Sale',particulars:'Bill No. '+o.id,debit:Number(o.total||0),credit:0});});
+ db.orders.filter(o=>o.customerId===cid&&!o.cancelled).forEach(o=>{let dt=new Date(orderDateKey(o)+"T12:00:00+05:30");if(dt>=start&&dt<end)tx.push({date:dt,type:'Sale',particulars:'Bill No. '+o.id,debit:Number(o.total||0),credit:0});});
  db.payments.filter(p=>p.customerId===cid).forEach(p=>{let dt=new Date(p.date);if(dt>=start&&dt<end)tx.push({date:dt,type:'Rcpt',particulars:'Payment '+(p.ref?('Ref. '+p.ref):''),debit:0,credit:Number(p.amount||0)});});
  tx.sort((a,b)=>a.date-b.date);
  let balance=opening; tx=tx.map(x=>{balance+=x.debit-x.credit;return {...x,balance}});
@@ -899,7 +971,7 @@ function saveCustomerInterestSettings(cid,rate,graceMonths){
 }
 function showCustomerLedger(cid,month){
  let c=db.customers.find(x=>x.id===cid);if(!c)return;
- month=month||new Date().toISOString().slice(0,7);
+ month=month||appToday().slice(0,7);
  let d=customerLedgerData(cid,month),is=customerInterestSettings(c);
  let period=d.start.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
  document.getElementById('customers').innerHTML=
@@ -928,7 +1000,7 @@ function printCustomerLedger(cid,month,rate,graceMonths){
  let period=d.start.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'})+' - '+new Date(d.end.getTime()-1).toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
  w.document.write(`<!doctype html><html><head><title>Ledger - ${esc(c.name)}</title><style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;font-size:10px}.head{text-align:center;border-bottom:2px dotted #777;padding-bottom:8px;margin-bottom:10px}.head h1{margin:0;font-size:16px}.head p{margin:2px 0;font-size:9px}.party{display:flex;justify-content:space-between;font-size:10px;margin:7px 0 10px}table{width:100%;border-collapse:collapse;font-size:9px}th,td{border:1px solid #555;padding:4px 5px}th{font-weight:700;background:#f5f5f5}.num{text-align:right;white-space:nowrap}.total{font-weight:bold;background:#eee}.interest-page{page-break-before:always}.interest-page th,.interest-page td{border:0;border-bottom:1px dotted #777}.interest-page .total td{border-top:2px dotted #777;border-bottom:0}.note{font-size:8px;color:#555;margin-top:10px}</style></head><body><div class="page"><div class="head"><h1>${esc(business)}</h1><p>${esc(db.settings.address||'')}</p><p><b>LEDGER ACCOUNT</b></p><p>${esc(c.name)}${c.shop?' - '+esc(c.shop):''}</p><p>Period: ${period}</p></div><div class="party"><span>Customer: <b>${esc(c.name)}</b><br>Mobile: ${esc(c.mobile||'-')}</span><span>Opening: <b>${ml(d.opening)}</b><br>Closing: <b>${ml(d.closing)}</b></span></div><table><thead><tr><th>Date</th><th>Type</th><th>Particulars</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead><tbody><tr><td>${d.start.toLocaleDateString('en-IN')}</td><td>Opening</td><td>Opening Balance</td><td class="num">-</td><td class="num">-</td><td class="num">${ml(d.opening)}</td></tr>${txRows}<tr class="total"><td colspan="3">Monthly Total</td><td class="num">${ml(d.debit)}</td><td class="num">${ml(d.credit)}</td><td class="num">${ml(d.closing)}</td></tr></tbody></table><div class="note">Generated by Aapni Dukan. Please verify ledger entries before relying on them.</div></div><div class="interest-page"><div class="head"><h1>${esc(business)}</h1><p>${esc(c.name)}${c.shop?' - '+esc(c.shop):''}</p><p><b>Interest Statement</b> from ${period}</p><p>Interest Rate: ${rate.toFixed(2)}% per year | Interest starts after: ${graceMonths===0?'Immediately':graceMonths+' month'+(graceMonths>1?'s':'')}</p></div><table><thead><tr><th>Description</th><th class="num">Transaction</th><th class="num">Due Days</th><th class="num">Interest Receivable</th><th class="num">Interest Payable</th></tr></thead><tbody>${intRows}<tr class="total"><td>TOTAL INTEREST</td><td></td><td></td><td class="num">${ml(totalR)}</td><td class="num">${ml(totalP)}</td></tr></tbody></table><div class="note">Each transaction gets the selected credit/grace period first. Interest is then calculated for the remaining chargeable days at the selected annual rate.</div></div></body></html>`);w.document.close();setTimeout(()=>{w.focus();w.print();},300);
 }
-function renderPayments(){document.getElementById("payments").innerHTML=head("Payments","Record and track customer collections.",`<button class="primary" onclick="openPayment()">+ Receive Payment</button>`)+`<div class="cards"><div class="card metric"><div class="label">Total Received</div><div class="value">${money(db.payments.reduce((a,p)=>a+p.amount,0))}</div></div><div class="card metric"><div class="label">Transactions</div><div class="value">${db.payments.length}</div></div></div><div class="panel" style="margin-top:18px"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody>${db.payments.slice().reverse().map(p=>`<tr><td>${new Date(p.date).toLocaleString("en-IN")}</td><td>${esc(customerName(p.customerId))}</td><td class="green"><b>${money(p.amount)}</b></td><td>${esc(p.method)}</td><td>${esc(p.ref||"-")}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No payments yet</td></tr>`}</tbody></table></div></div>`}
+function renderPayments(){document.getElementById("payments").innerHTML=head("Payments","Record and track customer collections.",`<button class="primary" onclick="openPayment()">+ Receive Payment</button>`)+`<div class="cards"><div class="card metric"><div class="label">Total Received</div><div class="value">${money(db.payments.reduce((a,p)=>a+p.amount,0))}</div></div><div class="card metric"><div class="label">Transactions</div><div class="value">${db.payments.length}</div></div></div><div class="panel" style="margin-top:18px"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody>${db.payments.slice().reverse().map(p=>`<tr><td>${appDateTime(p.date)}</td><td>${esc(customerName(p.customerId))}</td><td class="green"><b>${money(p.amount)}</b></td><td>${esc(p.method)}</td><td>${esc(p.ref||"-")}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No payments yet</td></tr>`}</tbody></table></div></div>`}
 function openPayment(cid=null){if(!db.customers.length){alert("Add a customer first.");return}showModal(`<div class="modalhead"><h2>Receive Payment</h2><button class="close" onclick="closeModal()">×</button></div><form id="payForm"><div class="formgrid"><div class="field"><label>Customer</label><select name="customer">${db.customers.map(c=>`<option value="${c.id}" ${cid===c.id?"selected":""}>${esc(c.name)} — Due ${money(outstanding(c))}</option>`).join("")}</select></div>${field("amount","Amount",0,"number")}<div class="field"><label>Payment Method</label><select name="method"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option><option>Other</option></select></div>${field("ref","Reference Number","")}</div><div class="modalfoot"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Payment</button></div></form>`);document.getElementById("payForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),a=+f.get("amount")||0;if(a<=0){alert("Enter a valid amount.");return}db.payments.push({id:id(),customerId:+f.get("customer"),amount:a,method:f.get("method"),ref:f.get("ref"),date:new Date().toISOString()});save();closeModal();renderAll();go("payments")}}
 function renderUdhaar(){document.getElementById("udhaar").innerHTML=head("Udhaar / Ledger","Customer balances and payment history.",`<button class="primary" onclick="openPayment()">+ Receive Payment</button>`)+`<div class="panel"><div class="tablewrap"><table><thead><tr><th>Customer</th><th>Total Sales Due</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody>${db.customers.map(c=>{let d=outstanding(c);return `<tr><td><b>${esc(c.name)}</b></td><td>${money(db.orders.filter(o=>o.customerId===c.id&&!o.cancelled).reduce((a,o)=>a+Number(o.total||0),0))}</td><td class="${d>0?'red':'green'}"><b>${money(d)}</b></td><td><span class="badge ${d>0?'red':'green'}">${d>0?'Due':'Clear'}</span></td><td><button class="smallbtn" onclick="openPayment(${c.id})">Receive Payment</button> <button class="smallbtn" onclick="showCustomerLedger(${c.id})">Ledger</button></td></tr>`}).join("")}</tbody></table></div></div>`}
 function renderInventory(){document.getElementById("inventory").innerHTML=head("Inventory","Live stock from products and sales.",`<button class="primary" onclick="go('products')">+ Add Stock</button>`)+`<div class="cards"><div class="card metric"><div class="label">Products</div><div class="value">${db.products.length}</div></div><div class="card metric"><div class="label">Units in Stock</div><div class="value">${db.products.reduce((a,p)=>a+p.stock,0)}</div></div><div class="card metric"><div class="label">Low Stock</div><div class="value yellow">${lowStock()}</div></div><div class="card metric"><div class="label">Out of Stock</div><div class="value red">${db.products.filter(p=>p.stock===0).length}</div></div></div><div class="panel" style="margin-top:18px"><div class="tablewrap"><table><thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Minimum</th><th>Purchase</th><th>Value</th><th>Status</th><th>Action</th></tr></thead><tbody>${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.sku)}</td><td>${p.stock} ${p.unit}</td><td>${p.min}</td><td>${money(p.purchase)}</td><td>${money(p.purchase*p.stock)}</td><td><span class="badge ${p.stock===0?'red':p.stock<=p.min?'yellow':'green'}">${p.stock===0?'Out':p.stock<=p.min?'Low':'OK'}</span></td><td><button class="smallbtn" onclick="addStock(${p.id})">+ Stock</button></td></tr>`).join("")}</tbody></table></div></div>`}
@@ -936,14 +1008,8 @@ function getReportDateRange(){
   const from=document.getElementById("reportFromDate")?.value||"";
   const to=document.getElementById("reportToDate")?.value||"";
   let activeOrders=db.orders.filter(o=>!o.cancelled);
-  if(from){
-    const start=new Date(from+"T00:00:00");
-    activeOrders=activeOrders.filter(o=>new Date(o.date)>=start);
-  }
-  if(to){
-    const end=new Date(to+"T23:59:59.999");
-    activeOrders=activeOrders.filter(o=>new Date(o.date)<=end);
-  }
+  if(from) activeOrders=activeOrders.filter(o=>orderDateKey(o)>=from);
+  if(to) activeOrders=activeOrders.filter(o=>orderDateKey(o)<=to);
   return {from,to,activeOrders};
 }
 function renderReports(){
@@ -955,7 +1021,7 @@ function renderReports(){
   const profit=sales-cost;
   const dailyMap={};
   activeOrders.forEach(o=>{
-    const key=new Date(o.date).toISOString().slice(0,10);
+    const key=orderDateKey(o);
     if(!dailyMap[key]) dailyMap[key]={orders:0,sales:0,paid:0,cost:0};
     dailyMap[key].orders++;
     dailyMap[key].sales+=Number(o.total||0);
@@ -964,10 +1030,10 @@ function renderReports(){
   });
   const dailyRows=Object.keys(dailyMap).sort().reverse().map(key=>{
     const d=dailyMap[key];
-    return `<tr><td>${new Date(key+"T00:00:00").toLocaleDateString("en-IN")}</td><td>${d.orders}</td><td>${money(d.sales)}</td><td>${money(d.paid)}</td><td>${money(d.cost)}</td><td class="green"><b>${money(d.sales-d.cost)}</b></td></tr>`;
+    return `<tr><td>${appDate(key)}</td><td>${d.orders}</td><td>${money(d.sales)}</td><td>${money(d.paid)}</td><td>${money(d.cost)}</td><td class="green"><b>${money(d.sales-d.cost)}</b></td></tr>`;
   }).join("") || `<tr><td colspan="6" class="empty">Selected date range mein koi sale nahi hai</td></tr>`;
   const rangeText=range.from||range.to
-    ? `${range.from?new Date(range.from+"T00:00:00").toLocaleDateString("en-IN"):"Start"} → ${range.to?new Date(range.to+"T00:00:00").toLocaleDateString("en-IN"):"Today"}`
+    ? `${range.from?appDate(range.from):"Start"} → ${range.to?appDate(range.to):"Today"}`
     : "All Dates";
   document.getElementById("reports").innerHTML=
     head("Reports","Date range ke hisaab se Sales aur Profit dekhein.",`<button class="secondary" onclick="clearReportDateRange()">Clear Dates</button>`)+
